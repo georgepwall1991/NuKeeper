@@ -9,7 +9,8 @@
 
 Automagically update NuGet packages in all .NET projects.
 
-> **Note:** This project was originally archived. See [Why is NuKeeper Archived](https://github.com/NuKeeperDotNet/NuKeeper/issues/1155) for context.
+> **Note:** This project was originally archived.
+> See [Why is NuKeeper Archived](https://github.com/NuKeeperDotNet/NuKeeper/issues/1155) for context.
 
 ### What's New in v0.36
 
@@ -26,7 +27,8 @@ Automagically update NuGet packages in all .NET projects.
 - Git installed and available in PATH
 - Platform-specific access token (GitHub, Azure DevOps, GitLab, Bitbucket, or Gitea)
 
-> **Note:** For updating legacy .NET Framework projects on Linux/macOS, [Mono](https://www.mono-project.com/) is required.
+> **Note:** For updating legacy .NET Framework projects on Linux/macOS, [Mono](https://www.mono-project.com/) is
+> required.
 
 ---
 
@@ -200,12 +202,12 @@ nukeeper global --token ghp_xxxxx
 
 Control which types of updates to apply:
 
-| Level | Description | Example |
-|-------|-------------|---------|
+| Level   | Description           | Example       |
+|---------|-----------------------|---------------|
 | `Major` | Major version updates | 1.0.0 → 2.0.0 |
 | `Minor` | Minor version updates | 1.0.0 → 1.1.0 |
 | `Patch` | Patch version updates | 1.0.0 → 1.0.1 |
-| `None` | No updates | - |
+| `None`  | No updates            | -             |
 
 ```bash
 nukeeper update --change Patch
@@ -257,24 +259,24 @@ nukeeper update --verbosity Quiet
 
 ### Project Types
 
-| Project Type | Supported |
-|:------------|:---------:|
-| .NET 8/9/10 | Yes |
-| .NET Core 3.1+ | Yes |
-| .NET Standard | Yes |
-| .NET Framework | Yes |
-| Private NuGet Feeds | Yes |
+| Project Type        | Supported |
+|:--------------------|:---------:|
+| .NET 8/9/10         |    Yes    |
+| .NET Core 3.1+      |    Yes    |
+| .NET Standard       |    Yes    |
+| .NET Framework      |    Yes    |
+| Private NuGet Feeds |    Yes    |
 
 ### Git Platforms
 
-| Platform | Supported | Token Type |
-|:---------|:---------:|:-----------|
-| GitHub | Yes | Personal Access Token |
-| Azure DevOps | Yes | Personal Access Token |
-| GitLab | Yes | Personal Access Token |
-| Bitbucket Cloud | Yes | App Password |
-| Bitbucket Server | Yes | Personal Access Token |
-| Gitea | Yes | Access Token |
+| Platform         | Supported | Token Type            |
+|:-----------------|:---------:|:----------------------|
+| GitHub           |    Yes    | Personal Access Token |
+| Azure DevOps     |    Yes    | Personal Access Token |
+| GitLab           |    Yes    | Personal Access Token |
+| Bitbucket Cloud  |    Yes    | App Password          |
+| Bitbucket Server |    Yes    | Personal Access Token |
+| Gitea            |    Yes    | Access Token          |
 
 ---
 
@@ -377,15 +379,18 @@ Create a scheduled job to check for updates weekly:
 ### Common Issues
 
 **"Unable to find package"**
+
 - Ensure you have access to the NuGet feed
 - Check if the package requires authentication
 
 **"401 Unauthorized"**
+
 - Verify your token has the correct permissions
 - For GitHub: needs `repo` scope
 - For Azure DevOps: needs `Code (Read & Write)` scope
 
 **"No updates found"**
+
 - Try with `--verbosity Detailed` to see what's happening
 - Check your `--change` level setting
 - Verify packages aren't excluded by age threshold
@@ -413,7 +418,8 @@ NuKeeper is licensed under the [Apache License](http://opensource.org/licenses/a
 
 ## Acknowledgements
 
-Logos by [area55](https://github.com/area55git), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Logos by [area55](https://github.com/area55git), licensed
+under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 <p align="center">
   <img src="https://github.com/NuKeeperDotNet/NuKeeper/blob/master/assets/Footer.svg" />

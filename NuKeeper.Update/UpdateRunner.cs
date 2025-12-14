@@ -1,105 +1,96 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using NuKeeper.Abstractions.Logging;
 using NuKeeper.Abstractions.NuGet;
 using NuKeeper.Abstractions.RepositoryInspection;
 using NuKeeper.Inspection.Sort;
 using NuKeeper.Update.Process;
 
-namespace NuKeeper.Update
+namespace NuKeeper.Update;
+
+public class UpdateRunner : IUpdateRunner
 {
-    public class UpdateRunner : IUpdateRunner
+    private readonly IDotNetUpdatePackageCommand _dotNetUpdatePackageCommand;
+    private readonly IFileRestoreCommand _fileRestoreCommand;
+    private readonly INuKeeperLogger _logger;
+    private readonly INuGetUpdatePackageCommand _nuGetUpdatePackageCommand;
+    private readonly IUpdateDirectoryBuildTargetsCommand _updateDirectoryBuildTargetsCommand;
+    private readonly IUpdateNuspecCommand _updateNuspecCommand;
+    private readonly IUpdateProjectImportsCommand _updateProjectImportsCommand;
+
+    public UpdateRunner(
+        INuKeeperLogger logger,
+        IFileRestoreCommand fileRestoreCommand,
+        INuGetUpdatePackageCommand nuGetUpdatePackageCommand,
+        IDotNetUpdatePackageCommand dotNetUpdatePackageCommand,
+        IUpdateProjectImportsCommand updateProjectImportsCommand,
+        IUpdateNuspecCommand updateNuspecCommand,
+        IUpdateDirectoryBuildTargetsCommand updateDirectoryBuildTargetsCommand)
     {
-        private readonly INuKeeperLogger _logger;
-        private readonly IFileRestoreCommand _fileRestoreCommand;
-        private readonly INuGetUpdatePackageCommand _nuGetUpdatePackageCommand;
-        private readonly IDotNetUpdatePackageCommand _dotNetUpdatePackageCommand;
-        private readonly IUpdateProjectImportsCommand _updateProjectImportsCommand;
-        private readonly IUpdateNuspecCommand _updateNuspecCommand;
-        private readonly IUpdateDirectoryBuildTargetsCommand _updateDirectoryBuildTargetsCommand;
+        _logger = logger;
+        _fileRestoreCommand = fileRestoreCommand;
+        _nuGetUpdatePackageCommand = nuGetUpdatePackageCommand;
+        _dotNetUpdatePackageCommand = dotNetUpdatePackageCommand;
+        _updateProjectImportsCommand = updateProjectImportsCommand;
+        _updateNuspecCommand = updateNuspecCommand;
+        _updateDirectoryBuildTargetsCommand = updateDirectoryBuildTargetsCommand;
+    }
 
-        public UpdateRunner(
-            INuKeeperLogger logger,
-            IFileRestoreCommand fileRestoreCommand,
-            INuGetUpdatePackageCommand nuGetUpdatePackageCommand,
-            IDotNetUpdatePackageCommand dotNetUpdatePackageCommand,
-            IUpdateProjectImportsCommand updateProjectImportsCommand,
-            IUpdateNuspecCommand updateNuspecCommand,
-            IUpdateDirectoryBuildTargetsCommand updateDirectoryBuildTargetsCommand)
+    public async Task Update(PackageUpdateSet updateSet, NuGetSources sources)
+    {
+        if (updateSet == null) throw new ArgumentNullException(nameof(updateSet));
+
+        var sortedUpdates = Sort(updateSet.CurrentPackages);
+
+        _logger.Detailed(
+            $"Updating '{updateSet.SelectedId}' to {updateSet.SelectedVersion} in {sortedUpdates.Count} projects");
+
+        foreach (var current in sortedUpdates)
         {
-            _logger = logger;
-            _fileRestoreCommand = fileRestoreCommand;
-            _nuGetUpdatePackageCommand = nuGetUpdatePackageCommand;
-            _dotNetUpdatePackageCommand = dotNetUpdatePackageCommand;
-            _updateProjectImportsCommand = updateProjectImportsCommand;
-            _updateNuspecCommand = updateNuspecCommand;
-            _updateDirectoryBuildTargetsCommand = updateDirectoryBuildTargetsCommand;
+            var updateCommands = GetUpdateCommands(current.Path.PackageReferenceType);
+            foreach (var updateCommand in updateCommands)
+                await updateCommand.Invoke(current,
+                    updateSet.SelectedVersion, updateSet.Selected.Source,
+                    sources);
         }
+    }
 
-        public async Task Update(PackageUpdateSet updateSet, NuGetSources sources)
+    private IReadOnlyCollection<PackageInProject> Sort(IReadOnlyCollection<PackageInProject> packages)
+    {
+        var sorter = new PackageInProjectTopologicalSort(_logger);
+        return sorter.Sort(packages)
+            .ToList();
+    }
+
+    private IReadOnlyCollection<IPackageCommand> GetUpdateCommands(
+        PackageReferenceType packageReferenceType)
+    {
+        switch (packageReferenceType)
         {
-            if (updateSet == null)
-            {
-                throw new ArgumentNullException(nameof(updateSet));
-            }
-
-            var sortedUpdates = Sort(updateSet.CurrentPackages);
-
-            _logger.Detailed($"Updating '{updateSet.SelectedId}' to {updateSet.SelectedVersion} in {sortedUpdates.Count} projects");
-
-            foreach (var current in sortedUpdates)
-            {
-                var updateCommands = GetUpdateCommands(current.Path.PackageReferenceType);
-                foreach (var updateCommand in updateCommands)
+            case PackageReferenceType.PackagesConfig:
+                return new IPackageCommand[]
                 {
-                    await updateCommand.Invoke(current,
-                        updateSet.SelectedVersion, updateSet.Selected.Source,
-                        sources);
-                }
-            }
-        }
+                    _fileRestoreCommand,
+                    _nuGetUpdatePackageCommand
+                };
 
-        private IReadOnlyCollection<PackageInProject> Sort(IReadOnlyCollection<PackageInProject> packages)
-        {
-            var sorter = new PackageInProjectTopologicalSort(_logger);
-            return sorter.Sort(packages)
-                .ToList();
-        }
+            case PackageReferenceType.ProjectFileOldStyle:
+                return new IPackageCommand[]
+                {
+                    _updateProjectImportsCommand,
+                    _fileRestoreCommand,
+                    _dotNetUpdatePackageCommand
+                };
 
-        private IReadOnlyCollection<IPackageCommand> GetUpdateCommands(
-            PackageReferenceType packageReferenceType)
-        {
-            switch (packageReferenceType)
-            {
-                case PackageReferenceType.PackagesConfig:
-                    return new IPackageCommand[]
-                    {
-                        _fileRestoreCommand,
-                        _nuGetUpdatePackageCommand
-                    };
+            case PackageReferenceType.ProjectFile:
+                return new[] { _dotNetUpdatePackageCommand };
 
-                case PackageReferenceType.ProjectFileOldStyle:
-                    return new IPackageCommand[]
-                    {
-                        _updateProjectImportsCommand,
-                        _fileRestoreCommand,
-                        _dotNetUpdatePackageCommand
-                    };
+            case PackageReferenceType.Nuspec:
+                return new[] { _updateNuspecCommand };
 
-                case PackageReferenceType.ProjectFile:
-                    return new[] { _dotNetUpdatePackageCommand };
+            case PackageReferenceType.DirectoryBuildTargets:
+                return new[] { _updateDirectoryBuildTargetsCommand };
 
-                case PackageReferenceType.Nuspec:
-                    return new[] { _updateNuspecCommand };
-
-                case PackageReferenceType.DirectoryBuildTargets:
-                    return new[] { _updateDirectoryBuildTargetsCommand };
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(packageReferenceType));
-            }
+            default:
+                throw new ArgumentOutOfRangeException(nameof(packageReferenceType));
         }
     }
 }

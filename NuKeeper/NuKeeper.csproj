@@ -7,9 +7,9 @@
     <Description>Automagically update nuget packages in .NET projects</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Credentials" Version="7.0.1" />
-    <PackageReference Include="SimpleInjector" Version="5.5.0" />
-    <PackageReference Include="SimpleInjector.Integration.ServiceCollection" Version="5.5.0" />
+    <PackageReference Include="NuGet.Credentials" Version="7.0.1"/>
+    <PackageReference Include="SimpleInjector" Version="5.5.0"/>
+    <PackageReference Include="SimpleInjector.Integration.ServiceCollection" Version="5.5.0"/>
   </ItemGroup>
   <ItemGroup>
     <!-- Ship NuGet CLI -->
@@ -18,22 +18,22 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NuKeeper.Abstractions\NuKeeper.Abstractions.csproj" />
-    <ProjectReference Include="..\NuKeeper.AzureDevOps\NuKeeper.AzureDevOps.csproj" />
-    <ProjectReference Include="..\Nukeeper.BitBucketLocal\NuKeeper.BitBucketLocal.csproj" />
-    <ProjectReference Include="..\NuKeeper.BitBucket\NuKeeper.BitBucket.csproj" />
-    <ProjectReference Include="..\NuKeeper.Gitea\NuKeeper.Gitea.csproj" />
-    <ProjectReference Include="..\NuKeeper.GitHub\NuKeeper.GitHub.csproj" />
-    <ProjectReference Include="..\NuKeeper.Gitlab\NuKeeper.Gitlab.csproj" />
-    <ProjectReference Include="..\NuKeeper.Git\NuKeeper.Git.csproj" />
-    <ProjectReference Include="..\NuKeeper.Inspection\NuKeeper.Inspection.csproj" />
-    <ProjectReference Include="..\NuKeeper.Update\NuKeeper.Update.csproj" />
+    <ProjectReference Include="..\NuKeeper.Abstractions\NuKeeper.Abstractions.csproj"/>
+    <ProjectReference Include="..\NuKeeper.AzureDevOps\NuKeeper.AzureDevOps.csproj"/>
+    <ProjectReference Include="..\Nukeeper.BitBucketLocal\NuKeeper.BitBucketLocal.csproj"/>
+    <ProjectReference Include="..\NuKeeper.BitBucket\NuKeeper.BitBucket.csproj"/>
+    <ProjectReference Include="..\NuKeeper.Gitea\NuKeeper.Gitea.csproj"/>
+    <ProjectReference Include="..\NuKeeper.GitHub\NuKeeper.GitHub.csproj"/>
+    <ProjectReference Include="..\NuKeeper.Gitlab\NuKeeper.Gitlab.csproj"/>
+    <ProjectReference Include="..\NuKeeper.Git\NuKeeper.Git.csproj"/>
+    <ProjectReference Include="..\NuKeeper.Inspection\NuKeeper.Inspection.csproj"/>
+    <ProjectReference Include="..\NuKeeper.Update\NuKeeper.Update.csproj"/>
   </ItemGroup>
   <ItemGroup>
     <None Update="config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="..\assets\icon.png" Pack="true" PackagePath="\" />
+    <None Include="..\assets\icon.png" Pack="true" PackagePath="\"/>
   </ItemGroup>
   <ItemGroup>
     <TfmSpecificPackageFile Include="$(PkgNuGet_CommandLine)\tools\NuGet.exe">

@@ -1,35 +1,27 @@
-using System;
-using System.Collections.Generic;
 using System.Text;
 using NuKeeper.Abstractions.RepositoryInspection;
 using NuKeeper.Inspection.Logging;
 
-namespace NuKeeper.Inspection
+namespace NuKeeper.Inspection;
+
+public static class UpdatesLogger
 {
-    public static class UpdatesLogger
+    public static LogData Log(IReadOnlyCollection<PackageUpdateSet> updates)
     {
-        public static LogData Log(IReadOnlyCollection<PackageUpdateSet> updates)
+        if (updates == null) throw new ArgumentNullException(nameof(updates));
+
+        var headline = $"Found {updates.Count} possible updates";
+        var details = new StringBuilder();
+
+        foreach (var updateSet in updates)
+        foreach (var current in updateSet.CurrentPackages)
+            details.AppendLine(
+                $"{updateSet.SelectedId} from {current.Version} to {updateSet.SelectedVersion} in {current.Path.RelativePath}");
+
+        return new LogData
         {
-            if (updates == null)
-            {
-                throw new ArgumentNullException(nameof(updates));
-            }
-
-            var headline = $"Found {updates.Count} possible updates";
-            var details = new StringBuilder();
-
-            foreach (var updateSet in updates)
-            {
-                foreach (var current in updateSet.CurrentPackages)
-                {
-                    details.AppendLine($"{updateSet.SelectedId} from {current.Version} to {updateSet.SelectedVersion} in {current.Path.RelativePath}");
-                }
-            }
-            return new LogData
-            {
-                Terse = headline,
-                Info = details.ToString()
-            };
-        }
+            Terse = headline,
+            Info = details.ToString()
+        };
     }
 }

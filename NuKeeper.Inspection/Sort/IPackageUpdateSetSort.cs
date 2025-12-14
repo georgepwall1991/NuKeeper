@@ -1,10 +1,8 @@
-using System.Collections.Generic;
 using NuKeeper.Abstractions.RepositoryInspection;
 
-namespace NuKeeper.Inspection.Sort
+namespace NuKeeper.Inspection.Sort;
+
+public interface IPackageUpdateSetSort
 {
-    public interface IPackageUpdateSetSort
-    {
-        IEnumerable<PackageUpdateSet> Sort(IReadOnlyCollection<PackageUpdateSet> input);
-    }
+    IEnumerable<PackageUpdateSet> Sort(IReadOnlyCollection<PackageUpdateSet> input);
 }

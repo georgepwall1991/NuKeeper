@@ -1,9 +1,8 @@
-namespace NuKeeper.Abstractions.Configuration
+namespace NuKeeper.Abstractions.Configuration;
+
+public enum UsePrerelease
 {
-    public enum UsePrerelease
-    {
-        Always,
-        Never,
-        FromPrerelease
-    }
+    Always,
+    Never,
+    FromPrerelease
 }

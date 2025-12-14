@@ -1,55 +1,50 @@
-using System;
-using System.Threading.Tasks;
 using NuGet.Packaging.Core;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.Configuration;
 using NuKeeper.Abstractions.NuGet;
 using NuKeeper.Abstractions.NuGetApi;
 
-namespace NuKeeper.Inspection.NuGetApi
+namespace NuKeeper.Inspection.NuGetApi;
+
+public class ApiPackageLookup : IApiPackageLookup
 {
-    public class ApiPackageLookup : IApiPackageLookup
+    private readonly IPackageVersionsLookup _packageVersionsLookup;
+
+    public ApiPackageLookup(IPackageVersionsLookup packageVersionsLookup)
     {
-        private readonly IPackageVersionsLookup _packageVersionsLookup;
+        _packageVersionsLookup = packageVersionsLookup;
+    }
 
-        public ApiPackageLookup(IPackageVersionsLookup packageVersionsLookup)
+    public async Task<PackageLookupResult> FindVersionUpdate(
+        PackageIdentity package,
+        NuGetSources sources,
+        VersionChange allowedChange,
+        UsePrerelease usePrerelease)
+    {
+        if (package == null) throw new ArgumentNullException(nameof(package));
+
+        var includePrerelease = ShouldAllowPrerelease(package, usePrerelease);
+
+        var foundVersions = await _packageVersionsLookup.Lookup(package.Id, includePrerelease, sources)
+            .ConfigureAwait(false);
+        return VersionChanges.MakeVersions(package.Version, foundVersions, allowedChange);
+    }
+
+    private static bool ShouldAllowPrerelease(PackageIdentity package, UsePrerelease usePrerelease)
+    {
+        switch (usePrerelease)
         {
-            _packageVersionsLookup = packageVersionsLookup;
-        }
+            case UsePrerelease.Always:
+                return true;
 
-        public async Task<PackageLookupResult> FindVersionUpdate(
-            PackageIdentity package,
-            NuGetSources sources,
-            VersionChange allowedChange,
-            UsePrerelease usePrerelease)
-        {
-            if (package == null)
-            {
-                throw new ArgumentNullException(nameof(package));
-            }
+            case UsePrerelease.Never:
+                return false;
 
-            var includePrerelease = ShouldAllowPrerelease(package, usePrerelease);
+            case UsePrerelease.FromPrerelease:
+                return package.Version.IsPrerelease;
 
-            var foundVersions = await _packageVersionsLookup.Lookup(package.Id, includePrerelease, sources).ConfigureAwait(false);
-            return VersionChanges.MakeVersions(package.Version, foundVersions, allowedChange);
-        }
-
-        private static bool ShouldAllowPrerelease(PackageIdentity package, UsePrerelease usePrerelease)
-        {
-            switch (usePrerelease)
-            {
-                case UsePrerelease.Always:
-                    return true;
-
-                case UsePrerelease.Never:
-                    return false;
-
-                case UsePrerelease.FromPrerelease:
-                    return package.Version.IsPrerelease;
-
-                default:
-                    throw new NuKeeperException($"Invalid UsePrerelease value: {usePrerelease}");
-            }
+            default:
+                throw new NuKeeperException($"Invalid UsePrerelease value: {usePrerelease}");
         }
     }
 }

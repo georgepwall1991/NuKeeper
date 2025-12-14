@@ -3,9 +3,9 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Octokit" Version="14.0.0" />
-    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Update="NUnit" Version="4.4.0" />
+    <PackageReference Include="Octokit" Version="14.0.0"/>
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="18.0.1"/>
+    <PackageReference Update="NUnit" Version="4.4.0"/>
     <PackageReference Update="NUnit3TestAdapter" Version="6.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -20,8 +20,8 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NuKeeper.Inspection\NuKeeper.Inspection.csproj" />
-    <ProjectReference Include="..\NuKeeper.Update\NuKeeper.Update.csproj" />
-    <ProjectReference Include="..\NuKeeper\NuKeeper.csproj" />
+    <ProjectReference Include="..\NuKeeper.Inspection\NuKeeper.Inspection.csproj"/>
+    <ProjectReference Include="..\NuKeeper.Update\NuKeeper.Update.csproj"/>
+    <ProjectReference Include="..\NuKeeper\NuKeeper.csproj"/>
   </ItemGroup>
 </Project>

@@ -1,11 +1,10 @@
-namespace NuKeeper.Abstractions.RepositoryInspection
+namespace NuKeeper.Abstractions.RepositoryInspection;
+
+public enum PackageReferenceType
 {
-    public enum PackageReferenceType
-    {
-        PackagesConfig,
-        ProjectFile,
-        ProjectFileOldStyle,
-        Nuspec,
-        DirectoryBuildTargets
-    }
+    PackagesConfig,
+    ProjectFile,
+    ProjectFileOldStyle,
+    Nuspec,
+    DirectoryBuildTargets
 }

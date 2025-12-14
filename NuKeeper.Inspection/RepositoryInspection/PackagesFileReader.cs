@@ -1,71 +1,63 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Xml.Linq;
 using NuKeeper.Abstractions.Logging;
 using NuKeeper.Abstractions.RepositoryInspection;
 
-namespace NuKeeper.Inspection.RepositoryInspection
+namespace NuKeeper.Inspection.RepositoryInspection;
+
+public class PackagesFileReader : IPackageReferenceFinder
 {
-    public class PackagesFileReader : IPackageReferenceFinder
+    private readonly INuKeeperLogger _logger;
+    private readonly PackageInProjectReader _packageInProjectReader;
+
+    public PackagesFileReader(INuKeeperLogger logger)
     {
-        private readonly INuKeeperLogger _logger;
-        private readonly PackageInProjectReader _packageInProjectReader;
+        _logger = logger;
 
-        public PackagesFileReader(INuKeeperLogger logger)
+        _packageInProjectReader = new PackageInProjectReader(logger);
+    }
+
+    public IReadOnlyCollection<PackageInProject> ReadFile(string baseDirectory, string relativePath)
+    {
+        var packagePath = new PackagePath(baseDirectory, relativePath, PackageReferenceType.PackagesConfig);
+        try
         {
-            _logger = logger;
-
-            _packageInProjectReader = new PackageInProjectReader(logger);
-        }
-
-        public IReadOnlyCollection<PackageInProject> ReadFile(string baseDirectory, string relativePath)
-        {
-            var packagePath = new PackagePath(baseDirectory, relativePath, PackageReferenceType.PackagesConfig);
-            try
+            using (var fileContents = File.OpenRead(packagePath.FullName))
             {
-                using (var fileContents = File.OpenRead(packagePath.FullName))
-                {
-                    return Read(fileContents, packagePath);
-                }
-            }
-            catch (IOException ex)
-            {
-                throw new ApplicationException($"Unable to parse file {packagePath.FullName}", ex);
+                return Read(fileContents, packagePath);
             }
         }
-
-        public IReadOnlyCollection<string> GetFilePatterns()
+        catch (IOException ex)
         {
-            return new[] { "packages.config" };
+            throw new ApplicationException($"Unable to parse file {packagePath.FullName}", ex);
         }
+    }
 
-        public IReadOnlyCollection<PackageInProject> Read(Stream fileContents, PackagePath path)
-        {
-            var xml = XDocument.Load(fileContents);
+    public IReadOnlyCollection<string> GetFilePatterns()
+    {
+        return new[] { "packages.config" };
+    }
 
-            var packagesNode = xml.Element("packages");
-            if (packagesNode == null)
-            {
-                return Array.Empty<PackageInProject>();
-            }
+    public IReadOnlyCollection<PackageInProject> Read(Stream fileContents, PackagePath path)
+    {
+        var xml = XDocument.Load(fileContents);
 
-            var packageNodeList = packagesNode.Elements()
-                .Where(x => x.Name == "package");
+        var packagesNode = xml.Element("packages");
+        if (packagesNode == null) return Array.Empty<PackageInProject>();
 
-            return packageNodeList
-                .Select(el => XmlToPackage(el, path))
-                .Where(el => el != null)
-                .ToList();
-        }
+        var packageNodeList = packagesNode.Elements()
+            .Where(x => x.Name == "package");
 
-        private PackageInProject XmlToPackage(XElement el, PackagePath path)
-        {
-            var id = el.Attribute("id")?.Value;
-            var version = el.Attribute("version")?.Value;
+        return packageNodeList
+            .Select(el => XmlToPackage(el, path))
+            .Where(el => el != null)
+            .ToList();
+    }
 
-            return _packageInProjectReader.Read(id, version, path, null);
-        }
+    private PackageInProject XmlToPackage(XElement el, PackagePath path)
+    {
+        var id = el.Attribute("id")?.Value;
+        var version = el.Attribute("version")?.Value;
+
+        return _packageInProjectReader.Read(id, version, path, null);
     }
 }

@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using NSubstitute;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.CollaborationPlatform;
@@ -8,128 +6,137 @@ using NuKeeper.AzureDevOps;
 using NuKeeper.Tests;
 using NUnit.Framework;
 
-namespace Nukeeper.AzureDevOps.Tests
+namespace Nukeeper.AzureDevOps.Tests;
+
+[TestFixture]
+public class AzureDevOpsSettingsReaderTests
 {
-    [TestFixture]
-    public class AzureDevOpsSettingsReaderTests
+    [SetUp]
+    public void Setup()
     {
-        private ISettingsReader _azureSettingsReader;
-        private IEnvironmentVariablesProvider _environmentVariablesProvider;
+        _environmentVariablesProvider = Substitute.For<IEnvironmentVariablesProvider>();
+        _azureSettingsReader =
+            new AzureDevOpsSettingsReader(new MockedGitDiscoveryDriver(), _environmentVariablesProvider);
+    }
 
-        [SetUp]
-        public void Setup()
+    private ISettingsReader _azureSettingsReader;
+    private IEnvironmentVariablesProvider _environmentVariablesProvider;
+
+    [Test]
+    public async Task ReturnsTrueIfCanRead()
+    {
+        var canRead = await _azureSettingsReader.CanRead(new Uri("https://dev.azure.com/org"));
+        Assert.IsTrue(canRead);
+    }
+
+    [Test]
+    public void ReturnsCorrectPlatform()
+    {
+        var platform = _azureSettingsReader.Platform;
+        Assert.IsNotNull(platform);
+        Assert.AreEqual(platform, Platform.AzureDevOps);
+    }
+
+    [Test]
+    public void UpdateSettings_UpdatesSettings()
+    {
+        var settings = new CollaborationPlatformSettings
         {
-            _environmentVariablesProvider = Substitute.For<IEnvironmentVariablesProvider>();
-            _azureSettingsReader = new AzureDevOpsSettingsReader(new MockedGitDiscoveryDriver(), _environmentVariablesProvider);
-        }
+            Token = "accessToken",
+            BaseApiUrl = new Uri("https://dev.azure.com/")
+        };
+        _azureSettingsReader.UpdateCollaborationPlatformSettings(settings);
 
-        [Test]
-        public async Task ReturnsTrueIfCanRead()
+        Assert.IsNotNull(settings);
+        Assert.AreEqual(settings.BaseApiUrl, "https://dev.azure.com/");
+        Assert.AreEqual(settings.Token, "accessToken");
+        Assert.AreEqual(settings.ForkMode, ForkMode.SingleRepositoryOnly);
+    }
+
+    [Test]
+    public void AuthSettings_GetsCorrectSettingsFromEnvironment()
+    {
+        _environmentVariablesProvider.GetEnvironmentVariable("NuKeeper_azure_devops_token").Returns("envToken");
+
+        var settings = new CollaborationPlatformSettings
         {
-            var canRead = await _azureSettingsReader.CanRead(new Uri("https://dev.azure.com/org"));
-            Assert.IsTrue(canRead);
-        }
+            Token = "accessToken"
+        };
 
-        [Test]
-        public void ReturnsCorrectPlatform()
-        {
-            var platform = _azureSettingsReader.Platform;
-            Assert.IsNotNull(platform);
-            Assert.AreEqual(platform, Platform.AzureDevOps);
-        }
+        _azureSettingsReader.UpdateCollaborationPlatformSettings(settings);
 
-        [Test]
-        public void UpdateSettings_UpdatesSettings()
-        {
-            var settings = new CollaborationPlatformSettings
-            {
-                Token = "accessToken",
-                BaseApiUrl = new Uri("https://dev.azure.com/")
-            };
-            _azureSettingsReader.UpdateCollaborationPlatformSettings(settings);
+        Assert.AreEqual(settings.Token, "envToken");
+    }
 
-            Assert.IsNotNull(settings);
-            Assert.AreEqual(settings.BaseApiUrl, "https://dev.azure.com/");
-            Assert.AreEqual(settings.Token, "accessToken");
-            Assert.AreEqual(settings.ForkMode, ForkMode.SingleRepositoryOnly);
-        }
+    [TestCase(null)]
+    [TestCase("htps://org.visualstudio.com")]
+    public async Task InvalidUrlReturnsNull(string value)
+    {
+        var uriToTest = value == null ? null : new Uri(value);
+        var canRead = await _azureSettingsReader.CanRead(uriToTest);
 
-        [Test]
-        public void AuthSettings_GetsCorrectSettingsFromEnvironment()
-        {
-            _environmentVariablesProvider.GetEnvironmentVariable("NuKeeper_azure_devops_token").Returns("envToken");
+        Assert.IsFalse(canRead);
+    }
 
-            var settings = new CollaborationPlatformSettings
-            {
-                Token = "accessToken",
-            };
+    [Test]
+    public async Task RepositorySettings_GetsCorrectSettingsOrganisation()
+    {
+        var settings =
+            await _azureSettingsReader.RepositorySettings(new Uri("https://dev.azure.com/org/project/_git/reponame"),
+                true, "develop");
 
-            _azureSettingsReader.UpdateCollaborationPlatformSettings(settings);
+        Assert.IsNotNull(settings);
+        Assert.AreEqual(settings.ApiUri, "https://dev.azure.com/org/");
+        Assert.AreEqual(settings.RepositoryUri, "https://dev.azure.com/org/project/_git/reponame");
+        Assert.AreEqual(settings.RepositoryName, "reponame");
+        Assert.AreEqual(settings.RepositoryOwner, "project");
+        Assert.AreEqual(settings.SetAutoMerge, true);
+        Assert.AreEqual(settings.RemoteInfo.BranchName, "develop");
+    }
 
-            Assert.AreEqual(settings.Token, "envToken");
-        }
+    [Test]
+    public async Task RepositorySettings_GetsCorrectSettingsPrivate()
+    {
+        var settings =
+            await _azureSettingsReader.RepositorySettings(new Uri("https://dev.azure.com/owner/_git/reponame"), true,
+                "main");
 
-        [TestCase(null)]
-        [TestCase("htps://org.visualstudio.com")]
-        public async Task InvalidUrlReturnsNull(string value)
-        {
-            var uriToTest = value == null ? null : new Uri(value);
-            var canRead = await _azureSettingsReader.CanRead(uriToTest);
+        Assert.IsNotNull(settings);
+        Assert.AreEqual(settings.ApiUri, "https://dev.azure.com/");
+        Assert.AreEqual(settings.RepositoryUri, "https://dev.azure.com/owner/_git/reponame");
+        Assert.AreEqual(settings.RepositoryName, "reponame");
+        Assert.AreEqual(settings.RepositoryOwner, "owner");
+        Assert.AreEqual(settings.SetAutoMerge, true);
+        Assert.AreEqual(settings.RemoteInfo.BranchName, "main");
+    }
 
-            Assert.IsFalse(canRead);
-        }
+    [Test]
+    public async Task RepositorySettings_ReturnsNull()
+    {
+        var settings = await _azureSettingsReader.RepositorySettings(null, true);
+        Assert.IsNull(settings);
+    }
 
-        [Test]
-        public async Task RepositorySettings_GetsCorrectSettingsOrganisation()
-        {
-            var settings = await _azureSettingsReader.RepositorySettings(new Uri("https://dev.azure.com/org/project/_git/reponame"), true, "develop");
+    [Test]
+    public void RepositorySettings_PathTooLong()
+    {
+        Assert.ThrowsAsync<NuKeeperException>(() =>
+            _azureSettingsReader.RepositorySettings(
+                new Uri("https://dev.azure.com/org/project/_git/reponame/thisShouldNotBeHere/"), true));
+    }
 
-            Assert.IsNotNull(settings);
-            Assert.AreEqual(settings.ApiUri, "https://dev.azure.com/org/");
-            Assert.AreEqual(settings.RepositoryUri, "https://dev.azure.com/org/project/_git/reponame");
-            Assert.AreEqual(settings.RepositoryName, "reponame");
-            Assert.AreEqual(settings.RepositoryOwner, "project");
-            Assert.AreEqual(settings.SetAutoMerge, true);
-            Assert.AreEqual(settings.RemoteInfo.BranchName, "develop");
-        }
+    [Test]
+    public async Task RepositorySettings_HandlesSpacesInRepo()
+    {
+        var settings =
+            await _azureSettingsReader.RepositorySettings(
+                new Uri("https://dev.azure.com/org/project%20name/_git/repo%20name"), true);
 
-        [Test]
-        public async Task RepositorySettings_GetsCorrectSettingsPrivate()
-        {
-            var settings = await _azureSettingsReader.RepositorySettings(new Uri("https://dev.azure.com/owner/_git/reponame"), true, "main");
-
-            Assert.IsNotNull(settings);
-            Assert.AreEqual(settings.ApiUri, "https://dev.azure.com/");
-            Assert.AreEqual(settings.RepositoryUri, "https://dev.azure.com/owner/_git/reponame");
-            Assert.AreEqual(settings.RepositoryName, "reponame");
-            Assert.AreEqual(settings.RepositoryOwner, "owner");
-            Assert.AreEqual(settings.SetAutoMerge, true);
-            Assert.AreEqual(settings.RemoteInfo.BranchName, "main");
-        }
-
-        [Test]
-        public async Task RepositorySettings_ReturnsNull()
-        {
-            var settings = await _azureSettingsReader.RepositorySettings(null, true);
-            Assert.IsNull(settings);
-        }
-
-        [Test]
-        public void RepositorySettings_PathTooLong()
-        {
-            Assert.ThrowsAsync<NuKeeperException>(() => _azureSettingsReader.RepositorySettings(new Uri("https://dev.azure.com/org/project/_git/reponame/thisShouldNotBeHere/"), true));
-        }
-
-        [Test]
-        public async Task RepositorySettings_HandlesSpacesInRepo()
-        {
-            var settings = await _azureSettingsReader.RepositorySettings(new Uri("https://dev.azure.com/org/project%20name/_git/repo%20name"), true);
-
-            Assert.IsNotNull(settings);
-            Assert.AreEqual("https://dev.azure.com/org/", settings.ApiUri.ToString());
-            Assert.AreEqual("https://dev.azure.com/org/project%20name/_git/repo%20name", settings.RepositoryUri.AbsoluteUri);
-            Assert.AreEqual("repo name", settings.RepositoryName);
-            Assert.AreEqual("project name", settings.RepositoryOwner);
-        }
+        Assert.IsNotNull(settings);
+        Assert.AreEqual("https://dev.azure.com/org/", settings.ApiUri.ToString());
+        Assert.AreEqual("https://dev.azure.com/org/project%20name/_git/repo%20name",
+            settings.RepositoryUri.AbsoluteUri);
+        Assert.AreEqual("repo name", settings.RepositoryName);
+        Assert.AreEqual("project name", settings.RepositoryOwner);
     }
 }

@@ -1,11 +1,9 @@
-using System;
 using NuKeeper.Abstractions.Logging;
 
-namespace NuKeeper.Inspection.Logging
+namespace NuKeeper.Inspection.Logging;
+
+public interface IInternalLogger
 {
-    public interface IInternalLogger
-    {
-        void LogError(string message, Exception ex);
-        void Log(LogLevel level, string message);
-    }
+    void LogError(string message, Exception ex);
+    void Log(LogLevel level, string message);
 }

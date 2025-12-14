@@ -1,7 +1,6 @@
-namespace NuKeeper.Update.Process
+namespace NuKeeper.Update.Process;
+
+public interface INuGetPath
 {
-    public interface INuGetPath
-    {
-        string Executable { get; }
-    }
+    string Executable { get; }
 }

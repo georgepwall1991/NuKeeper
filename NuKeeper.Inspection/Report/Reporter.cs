@@ -1,92 +1,84 @@
-using System;
-using System.Collections.Generic;
 using NuKeeper.Abstractions.Logging;
 using NuKeeper.Abstractions.Output;
 using NuKeeper.Abstractions.RepositoryInspection;
 using NuKeeper.Inspection.Report.Formats;
 
-namespace NuKeeper.Inspection.Report
+namespace NuKeeper.Inspection.Report;
+
+public class Reporter : IReporter
 {
-    public class Reporter : IReporter
+    private readonly INuKeeperLogger _logger;
+
+    public Reporter(INuKeeperLogger logger)
     {
-        private readonly INuKeeperLogger _logger;
+        _logger = logger;
+    }
 
-        public Reporter(INuKeeperLogger logger)
+    public void Report(
+        OutputDestination destination,
+        OutputFormat format,
+        string reportName,
+        string fileName,
+        IReadOnlyCollection<PackageUpdateSet> updates)
+    {
+        if (updates == null) throw new ArgumentNullException(nameof(updates));
+
+        var destinationDesc = destination == OutputDestination.File ? $" File '{fileName}'" : destination.ToString();
+
+        _logger.Detailed($"Output report named {reportName}, is {format} to {destinationDesc}");
+
+        using (var writer = MakeReportWriter(destination, fileName))
         {
-            _logger = logger;
+            var reporter = MakeReporter(format, writer);
+            reporter.Write(reportName, updates);
         }
 
-        public void Report(
-            OutputDestination destination,
-            OutputFormat format,
-            string reportName,
-            string fileName,
-            IReadOnlyCollection<PackageUpdateSet> updates)
+        _logger.Detailed($"Wrote report for {updates.Count} updates");
+    }
+
+    private static IReportFormat MakeReporter(
+        OutputFormat format,
+        IReportWriter writer)
+    {
+        switch (format)
         {
-            if (updates == null)
-            {
-                throw new ArgumentNullException(nameof(updates));
-            }
+            case OutputFormat.Off:
+                return new NullReportFormat();
 
-            var destinationDesc = destination == OutputDestination.File ?
-                $" File '{fileName}'" :
-                destination.ToString();
+            case OutputFormat.Text:
+                return new TextReportFormat(writer);
 
-            _logger.Detailed($"Output report named {reportName}, is {format} to {destinationDesc}");
+            case OutputFormat.Csv:
+                return new CsvReportFormat(writer);
 
-            using (var writer = MakeReportWriter(destination, fileName))
-            {
-                var reporter = MakeReporter(format, writer);
-                reporter.Write(reportName, updates);
-            }
+            case OutputFormat.Metrics:
+                return new MetricsReportFormat(writer);
 
-            _logger.Detailed($"Wrote report for {updates.Count} updates");
+            case OutputFormat.LibYears:
+                return new LibYearsReportFormat(writer);
+
+            default:
+                throw new ArgumentOutOfRangeException($"Invalid OutputFormat: {format}");
         }
+    }
 
-        private static IReportFormat MakeReporter(
-            OutputFormat format,
-            IReportWriter writer)
+    private static IReportWriter MakeReportWriter(
+        OutputDestination destination,
+        string fileName)
+    {
+        switch (destination)
         {
-            switch (format)
-            {
-                case OutputFormat.Off:
-                    return new NullReportFormat();
+            case OutputDestination.Console:
+                return new ConsoleReportWriter();
 
-                case OutputFormat.Text:
-                    return new TextReportFormat(writer);
+            case OutputDestination.File:
+                return new FileReportWriter(fileName);
 
-                case OutputFormat.Csv:
-                    return new CsvReportFormat(writer);
+            case OutputDestination.Off:
+                return new NullReportWriter();
 
-                case OutputFormat.Metrics:
-                    return new MetricsReportFormat(writer);
-
-                case OutputFormat.LibYears:
-                    return new LibYearsReportFormat(writer);
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Invalid OutputFormat: {format}");
-            }
-        }
-
-        private static IReportWriter MakeReportWriter(
-            OutputDestination destination,
-            string fileName)
-        {
-            switch (destination)
-            {
-                case OutputDestination.Console:
-                    return new ConsoleReportWriter();
-
-                case OutputDestination.File:
-                    return new FileReportWriter(fileName);
-
-                case OutputDestination.Off:
-                    return new NullReportWriter();
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Invalid OutputDestination: {destination}");
-            }
+            default:
+                throw new ArgumentOutOfRangeException($"Invalid OutputDestination: {destination}");
         }
     }
 }

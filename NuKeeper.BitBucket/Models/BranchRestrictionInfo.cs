@@ -1,6 +1,5 @@
-﻿namespace NuKeeper.BitBucket.Models
+﻿namespace NuKeeper.BitBucket.Models;
+
+public class BranchRestrictionInfo : ListBasedPage<BranchRestriction>
 {
-    public class BranchRestrictionInfo : ListBasedPage<BranchRestriction>
-    {
-    }
 }

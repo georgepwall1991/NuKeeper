@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using NSubstitute;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
@@ -17,246 +13,250 @@ using NuKeeper.Inspection.NuGetApi;
 using NuKeeper.Inspection.RepositoryInspection;
 using NUnit.Framework;
 
-namespace NuKeeper.Inspection.Tests
+namespace NuKeeper.Inspection.Tests;
+
+[TestFixture]
+public class UpdateFinderTests
 {
-    [TestFixture]
-    public class UpdateFinderTests
+    [Test]
+    public async Task FindWithoutResults()
     {
-        [Test]
-        public async Task FindWithoutResults()
-        {
-            var scanner = Substitute.For<IRepositoryScanner>();
-            var updater = Substitute.For<IPackageUpdatesLookup>();
-            var logger = Substitute.For<INuKeeperLogger>();
-            var folder = Substitute.For<IFolder>();
+        var scanner = Substitute.For<IRepositoryScanner>();
+        var updater = Substitute.For<IPackageUpdatesLookup>();
+        var logger = Substitute.For<INuKeeperLogger>();
+        var folder = Substitute.For<IFolder>();
 
-            ReturnsUpdateSetForEachPackage(updater);
+        ReturnsUpdateSetForEachPackage(updater);
 
-            var finder = new UpdateFinder(scanner, updater, logger);
+        var finder = new UpdateFinder(scanner, updater, logger);
 
-            var results = await finder.FindPackageUpdateSets(
-                folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease);
+        var results = await finder.FindPackageUpdateSets(
+            folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease);
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(0));
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(0));
 
-            logger
-                .DidNotReceive()
-                .Error(Arg.Any<string>(), Arg.Any<Exception>());
-        }
+        logger
+            .DidNotReceive()
+            .Error(Arg.Any<string>(), Arg.Any<Exception>());
+    }
 
-        [Test]
-        public async Task FindWithOneResult()
-        {
-            var scanner = Substitute.For<IRepositoryScanner>();
-            var updater = Substitute.For<IPackageUpdatesLookup>();
-            var logger = Substitute.For<INuKeeperLogger>();
-            var folder = Substitute.For<IFolder>();
+    [Test]
+    public async Task FindWithOneResult()
+    {
+        var scanner = Substitute.For<IRepositoryScanner>();
+        var updater = Substitute.For<IPackageUpdatesLookup>();
+        var logger = Substitute.For<INuKeeperLogger>();
+        var folder = Substitute.For<IFolder>();
 
-            var pip = BuildPackageInProject("somePackage");
+        var pip = BuildPackageInProject("somePackage");
 
-            scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
-                .Returns(new List<PackageInProject> { pip });
+        scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
+            .Returns(new List<PackageInProject> { pip });
 
-            ReturnsUpdateSetForEachPackage(updater);
+        ReturnsUpdateSetForEachPackage(updater);
 
-            var finder = new UpdateFinder(scanner, updater, logger);
+        var finder = new UpdateFinder(scanner, updater, logger);
 
-            var results = await finder.FindPackageUpdateSets(
-                folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease);
+        var results = await finder.FindPackageUpdateSets(
+            folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease);
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(results.First().SelectedId, Is.EqualTo("somePackage"));
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(results.First().SelectedId, Is.EqualTo("somePackage"));
 
-            logger
-                .DidNotReceive()
-                .Error(Arg.Any<string>(), Arg.Any<Exception>());
-        }
+        logger
+            .DidNotReceive()
+            .Error(Arg.Any<string>(), Arg.Any<Exception>());
+    }
 
-        [Test]
-        public async Task FindOneFilteredIncludeResult()
-        {
-            var scanner = Substitute.For<IRepositoryScanner>();
-            var updater = Substitute.For<IPackageUpdatesLookup>();
-            var logger = Substitute.For<INuKeeperLogger>();
-            var folder = Substitute.For<IFolder>();
+    [Test]
+    public async Task FindOneFilteredIncludeResult()
+    {
+        var scanner = Substitute.For<IRepositoryScanner>();
+        var updater = Substitute.For<IPackageUpdatesLookup>();
+        var logger = Substitute.For<INuKeeperLogger>();
+        var folder = Substitute.For<IFolder>();
 
-            var pip = BuildPackageInProject("somePackage");
-            var anotherPackage = BuildPackageInProject("anotherPackage");
+        var pip = BuildPackageInProject("somePackage");
+        var anotherPackage = BuildPackageInProject("anotherPackage");
 
-            scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
-                .Returns(new List<PackageInProject> { pip, anotherPackage, anotherPackage, anotherPackage });
+        scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
+            .Returns(new List<PackageInProject> { pip, anotherPackage, anotherPackage, anotherPackage });
 
-            ReturnsUpdateSetForEachPackage(updater);
+        ReturnsUpdateSetForEachPackage(updater);
 
-            var finder = new UpdateFinder(scanner, updater, logger);
+        var finder = new UpdateFinder(scanner, updater, logger);
 
-            var results = await finder.FindPackageUpdateSets(
-                folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease, new Regex("^somePackage"), null);
+        var results = await finder.FindPackageUpdateSets(
+            folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease,
+            new Regex("^somePackage"));
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(results.First().SelectedId, Is.EqualTo("somePackage"));
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(results.First().SelectedId, Is.EqualTo("somePackage"));
 
-            logger
-                .DidNotReceive()
-                .Error(Arg.Any<string>(), Arg.Any<Exception>());
-        }
+        logger
+            .DidNotReceive()
+            .Error(Arg.Any<string>(), Arg.Any<Exception>());
+    }
 
-        [Test]
-        public async Task FindTwoFilteredExcludeIncludeResults()
-        {
-            var scanner = Substitute.For<IRepositoryScanner>();
-            var updater = Substitute.For<IPackageUpdatesLookup>();
-            var logger = Substitute.For<INuKeeperLogger>();
-            var folder = Substitute.For<IFolder>();
+    [Test]
+    public async Task FindTwoFilteredExcludeIncludeResults()
+    {
+        var scanner = Substitute.For<IRepositoryScanner>();
+        var updater = Substitute.For<IPackageUpdatesLookup>();
+        var logger = Substitute.For<INuKeeperLogger>();
+        var folder = Substitute.For<IFolder>();
 
-            var pip = BuildPackageInProject("somePackage");
-            var anotherPackage = BuildPackageInProject("anotherPackage");
-            var andAnotherPackage = BuildPackageInProject("andAnotherPackage");
+        var pip = BuildPackageInProject("somePackage");
+        var anotherPackage = BuildPackageInProject("anotherPackage");
+        var andAnotherPackage = BuildPackageInProject("andAnotherPackage");
 
-            scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
-                .Returns(new List<PackageInProject> { pip, anotherPackage, andAnotherPackage });
+        scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
+            .Returns(new List<PackageInProject> { pip, anotherPackage, andAnotherPackage });
 
-            ReturnsUpdateSetForEachPackage(updater);
+        ReturnsUpdateSetForEachPackage(updater);
 
-            var finder = new UpdateFinder(scanner, updater, logger);
+        var finder = new UpdateFinder(scanner, updater, logger);
 
-            var results = await finder.FindPackageUpdateSets(
-                folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease, new Regex("^andAnotherPackage"), new Regex("^anotherPackage"));
+        var results = await finder.FindPackageUpdateSets(
+            folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease,
+            new Regex("^andAnotherPackage"), new Regex("^anotherPackage"));
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(results.First().SelectedId, Is.EqualTo("andAnotherPackage"));
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(results.First().SelectedId, Is.EqualTo("andAnotherPackage"));
 
-            logger
-                .DidNotReceive()
-                .Error(Arg.Any<string>(), Arg.Any<Exception>());
-        }
+        logger
+            .DidNotReceive()
+            .Error(Arg.Any<string>(), Arg.Any<Exception>());
+    }
 
-        [Test]
-        public async Task FindOneFilteredExcludeResult()
-        {
-            var scanner = Substitute.For<IRepositoryScanner>();
-            var updater = Substitute.For<IPackageUpdatesLookup>();
-            var logger = Substitute.For<INuKeeperLogger>();
-            var folder = Substitute.For<IFolder>();
+    [Test]
+    public async Task FindOneFilteredExcludeResult()
+    {
+        var scanner = Substitute.For<IRepositoryScanner>();
+        var updater = Substitute.For<IPackageUpdatesLookup>();
+        var logger = Substitute.For<INuKeeperLogger>();
+        var folder = Substitute.For<IFolder>();
 
-            var pip = BuildPackageInProject("somePackage");
-            var anotherPackage = BuildPackageInProject("anotherPackage");
+        var pip = BuildPackageInProject("somePackage");
+        var anotherPackage = BuildPackageInProject("anotherPackage");
 
-            scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
-                .Returns(new List<PackageInProject> { pip, anotherPackage, anotherPackage, anotherPackage });
+        scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
+            .Returns(new List<PackageInProject> { pip, anotherPackage, anotherPackage, anotherPackage });
 
-            ReturnsUpdateSetForEachPackage(updater);
+        ReturnsUpdateSetForEachPackage(updater);
 
-            var finder = new UpdateFinder(scanner, updater, logger);
+        var finder = new UpdateFinder(scanner, updater, logger);
 
-            var results = await finder.FindPackageUpdateSets(
-                folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease, null, new Regex("^anotherPackage"));
+        var results = await finder.FindPackageUpdateSets(
+            folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease, null,
+            new Regex("^anotherPackage"));
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(results.First().SelectedId, Is.EqualTo("somePackage"));
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(results.First().SelectedId, Is.EqualTo("somePackage"));
 
-            logger
-                .DidNotReceive()
-                .Error(Arg.Any<string>(), Arg.Any<Exception>());
-        }
+        logger
+            .DidNotReceive()
+            .Error(Arg.Any<string>(), Arg.Any<Exception>());
+    }
 
-        [Test]
-        public async Task FindSkipsMetapackageResult()
-        {
-            var scanner = Substitute.For<IRepositoryScanner>();
-            var updater = Substitute.For<IPackageUpdatesLookup>();
-            var logger = Substitute.For<INuKeeperLogger>();
-            var folder = Substitute.For<IFolder>();
+    [Test]
+    public async Task FindSkipsMetapackageResult()
+    {
+        var scanner = Substitute.For<IRepositoryScanner>();
+        var updater = Substitute.For<IPackageUpdatesLookup>();
+        var logger = Substitute.For<INuKeeperLogger>();
+        var folder = Substitute.For<IFolder>();
 
-            var pip = BuildPackageInProject("somePackage");
-            var aspnetCore = BuildPackageInProject("Microsoft.AspNetCore.App");
+        var pip = BuildPackageInProject("somePackage");
+        var aspnetCore = BuildPackageInProject("Microsoft.AspNetCore.App");
 
-            scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
-                .Returns(new List<PackageInProject> { pip, aspnetCore });
+        scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
+            .Returns(new List<PackageInProject> { pip, aspnetCore });
 
-            ReturnsUpdateSetForEachPackage(updater);
+        ReturnsUpdateSetForEachPackage(updater);
 
-            var finder = new UpdateFinder(scanner, updater, logger);
+        var finder = new UpdateFinder(scanner, updater, logger);
 
-            var results = await finder.FindPackageUpdateSets(
-                folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease);
+        var results = await finder.FindPackageUpdateSets(
+            folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease);
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(results.First().SelectedId, Is.EqualTo("somePackage"));
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(results.First().SelectedId, Is.EqualTo("somePackage"));
 
-            logger
-                .Received(1)
-                .Error(Arg.Is<string>(
-                    s => s.StartsWith("Metapackage 'Microsoft.AspNetCore.App'", StringComparison.OrdinalIgnoreCase)));
-        }
+        logger
+            .Received(1)
+            .Error(Arg.Is<string>(s =>
+                s.StartsWith("Metapackage 'Microsoft.AspNetCore.App'", StringComparison.OrdinalIgnoreCase)));
+    }
 
-        [Test]
-        public async Task FindSkipsBothMetapackageResult()
-        {
-            var scanner = Substitute.For<IRepositoryScanner>();
-            var updater = Substitute.For<IPackageUpdatesLookup>();
-            var logger = Substitute.For<INuKeeperLogger>();
-            var folder = Substitute.For<IFolder>();
+    [Test]
+    public async Task FindSkipsBothMetapackageResult()
+    {
+        var scanner = Substitute.For<IRepositoryScanner>();
+        var updater = Substitute.For<IPackageUpdatesLookup>();
+        var logger = Substitute.For<INuKeeperLogger>();
+        var folder = Substitute.For<IFolder>();
 
-            var aspnetCoreAll = BuildPackageInProject("Microsoft.AspNetCore.All");
-            var pip = BuildPackageInProject("somePackage");
-            var aspnetCoreApp = BuildPackageInProject("Microsoft.AspNetCore.App");
+        var aspnetCoreAll = BuildPackageInProject("Microsoft.AspNetCore.All");
+        var pip = BuildPackageInProject("somePackage");
+        var aspnetCoreApp = BuildPackageInProject("Microsoft.AspNetCore.App");
 
-            scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
-                .Returns(new List<PackageInProject> { aspnetCoreAll, pip, aspnetCoreApp });
+        scanner.FindAllNuGetPackages(Arg.Any<IFolder>())
+            .Returns(new List<PackageInProject> { aspnetCoreAll, pip, aspnetCoreApp });
 
-            ReturnsUpdateSetForEachPackage(updater);
+        ReturnsUpdateSetForEachPackage(updater);
 
-            var finder = new UpdateFinder(scanner, updater, logger);
+        var finder = new UpdateFinder(scanner, updater, logger);
 
-            var results = await finder.FindPackageUpdateSets(
-                folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease);
+        var results = await finder.FindPackageUpdateSets(
+            folder, NuGetSources.GlobalFeed, VersionChange.Major, UsePrerelease.FromPrerelease);
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(results.First().SelectedId, Is.EqualTo("somePackage"));
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(results.First().SelectedId, Is.EqualTo("somePackage"));
 
-            logger
-                .Received(1)
-                .Error(Arg.Is<string>(s => s.StartsWith("Metapackage 'Microsoft.AspNetCore.App'", StringComparison.OrdinalIgnoreCase)));
-            logger
-                .Received(1)
-                .Error(Arg.Is<string>(s => s.StartsWith("Metapackage 'Microsoft.AspNetCore.All'", StringComparison.OrdinalIgnoreCase)));
-        }
+        logger
+            .Received(1)
+            .Error(Arg.Is<string>(s =>
+                s.StartsWith("Metapackage 'Microsoft.AspNetCore.App'", StringComparison.OrdinalIgnoreCase)));
+        logger
+            .Received(1)
+            .Error(Arg.Is<string>(s =>
+                s.StartsWith("Metapackage 'Microsoft.AspNetCore.All'", StringComparison.OrdinalIgnoreCase)));
+    }
 
-        private void ReturnsUpdateSetForEachPackage(IPackageUpdatesLookup updater)
-        {
-            updater.FindUpdatesForPackages(
-                    Arg.Any<IReadOnlyCollection<PackageInProject>>(),
-                    Arg.Any<NuGetSources>(),
-                    Arg.Any<VersionChange>(),
-                    Arg.Any<UsePrerelease>())
-                .Returns(a => a.ArgAt<IReadOnlyCollection<PackageInProject>>(0)
-                    .Select(BuildPackageUpdateSet)
-                    .ToList());
-        }
+    private void ReturnsUpdateSetForEachPackage(IPackageUpdatesLookup updater)
+    {
+        updater.FindUpdatesForPackages(
+                Arg.Any<IReadOnlyCollection<PackageInProject>>(),
+                Arg.Any<NuGetSources>(),
+                Arg.Any<VersionChange>(),
+                Arg.Any<UsePrerelease>())
+            .Returns(a => a.ArgAt<IReadOnlyCollection<PackageInProject>>(0)
+                .Select(BuildPackageUpdateSet)
+                .ToList());
+    }
 
-        private static PackageInProject BuildPackageInProject(string packageName)
-        {
-            var path = new PackagePath("c:\\temp", "folder\\src\\project1\\packages.config",
-                PackageReferenceType.PackagesConfig);
-            return new PackageInProject(packageName, "1.1.0", path);
-        }
+    private static PackageInProject BuildPackageInProject(string packageName)
+    {
+        var path = new PackagePath("c:\\temp", "folder\\src\\project1\\packages.config",
+            PackageReferenceType.PackagesConfig);
+        return new PackageInProject(packageName, "1.1.0", path);
+    }
 
-        private PackageUpdateSet BuildPackageUpdateSet(PackageInProject pip)
-        {
-            var package = new PackageIdentity(pip.Id, new NuGetVersion("1.4.5"));
-            var latest = new PackageSearchMetadata(package, new PackageSource("http://none"), null, null);
+    private PackageUpdateSet BuildPackageUpdateSet(PackageInProject pip)
+    {
+        var package = new PackageIdentity(pip.Id, new NuGetVersion("1.4.5"));
+        var latest = new PackageSearchMetadata(package, new PackageSource("http://none"), null, null);
 
-            var updates = new PackageLookupResult(VersionChange.Major, latest, null, null);
+        var updates = new PackageLookupResult(VersionChange.Major, latest, null, null);
 
-            return new PackageUpdateSet(updates, new List<PackageInProject> { pip });
-        }
+        return new PackageUpdateSet(updates, new List<PackageInProject> { pip });
     }
 }

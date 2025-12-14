@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using NSubstitute;
 using NuKeeper.Abstractions.Logging;
 using NuKeeper.Abstractions.NuGet;
@@ -9,168 +5,165 @@ using NuKeeper.Abstractions.RepositoryInspection;
 using NuKeeper.Inspection.Sort;
 using NUnit.Framework;
 
-namespace NuKeeper.Inspection.Tests.Sort
+namespace NuKeeper.Inspection.Tests.Sort;
+
+[TestFixture]
+public class PackageInProjectTopologicalSortTests
 {
-    [TestFixture]
-    public class PackageInProjectTopologicalSortTests
+    [Test]
+    public void CanSortEmptyList()
     {
-        [Test]
-        public void CanSortEmptyList()
+        var items = new List<PackageInProject>();
+
+        var sorter = new PackageInProjectTopologicalSort(Substitute.For<INuKeeperLogger>());
+
+        var sorted = sorter.Sort(items)
+            .ToList();
+
+        Assert.That(sorted, Is.Not.Null);
+        Assert.That(sorted, Is.Empty);
+    }
+
+    [Test]
+    public void CanSortOneItem()
+    {
+        var items = new List<PackageInProject>
         {
-            var items = new List<PackageInProject>();
+            PackageFor("foo", "1.2.3", "bar{sep}fish.csproj")
+        };
 
-            var sorter = new PackageInProjectTopologicalSort(Substitute.For<INuKeeperLogger>());
+        var sorter = new PackageInProjectTopologicalSort(Substitute.For<INuKeeperLogger>());
 
-            var sorted = sorter.Sort(items)
-                .ToList();
+        var sorted = sorter.Sort(items)
+            .ToList();
 
-            Assert.That(sorted, Is.Not.Null);
-            Assert.That(sorted, Is.Empty);
-        }
+        AssertIsASortOf(sorted, items);
+        Assert.That(sorted[0], Is.EqualTo(items[0]));
+    }
 
-        [Test]
-        public void CanSortOneItem()
+    [Test]
+    public void CanSortTwoUnrelatedItems()
+    {
+        var items = new List<PackageInProject>
         {
-            var items = new List<PackageInProject>
-            {
-                PackageFor("foo", "1.2.3", "bar{sep}fish.csproj"),
-            };
+            PackageFor("foo", "1.2.3", "bar{sep}fish.csproj"),
+            PackageFor("bar", "2.3.4", "project2{sep}p2.csproj")
+        };
 
-            var sorter = new PackageInProjectTopologicalSort(Substitute.For<INuKeeperLogger>());
+        var logger = Substitute.For<INuKeeperLogger>();
 
-            var sorted = sorter.Sort(items)
-                .ToList();
+        var sorter = new PackageInProjectTopologicalSort(logger);
 
-            AssertIsASortOf(sorted, items);
-            Assert.That(sorted[0], Is.EqualTo(items[0]));
-        }
+        var sorted = sorter.Sort(items)
+            .ToList();
 
-        [Test]
-        public void CanSortTwoUnrelatedItems()
+        AssertIsASortOf(sorted, items);
+        logger.Received(1).Detailed("No dependencies between items, no need to sort on dependencies");
+    }
+
+    [Test]
+    public void CanSortTwoRelatedItemsinCorrectOrder()
+    {
+        var aProj = PackageFor("foo", "1.2.3", "someproject{sep}someproject.csproj");
+        var testProj = PackageFor("bar", "2.3.4", "someproject.tests{sep}someproject.tests.csproj", aProj);
+
+        var items = new List<PackageInProject>
         {
-            var items = new List<PackageInProject>
-            {
-                PackageFor("foo", "1.2.3", "bar{sep}fish.csproj"),
-                PackageFor("bar", "2.3.4", "project2{sep}p2.csproj")
-            };
+            testProj,
+            aProj
+        };
 
-            var logger = Substitute.For<INuKeeperLogger>();
+        var logger = Substitute.For<INuKeeperLogger>();
 
-            var sorter = new PackageInProjectTopologicalSort(logger);
+        var sorter = new PackageInProjectTopologicalSort(logger);
 
-            var sorted = sorter.Sort(items)
-                .ToList();
+        var sorted = sorter.Sort(items)
+            .ToList();
 
-            AssertIsASortOf(sorted, items);
-            logger.Received(1).Detailed("No dependencies between items, no need to sort on dependencies");
-        }
+        AssertIsASortOf(sorted, items);
+        Assert.That(sorted[0], Is.EqualTo(items[0]));
+        Assert.That(sorted[1], Is.EqualTo(items[1]));
 
-        [Test]
-        public void CanSortTwoRelatedItemsinCorrectOrder()
+        logger.DidNotReceive().Detailed("No dependencies between items, no need to sort on dependencies");
+        logger.Received(1).Detailed("Sorted 2 projects by dependencies but no change made");
+    }
+
+    [Test]
+    public void CanSortTwoRelatedItemsinReverseOrder()
+    {
+        var aProj = PackageFor("foo", "1.2.3", "someproject{sep}someproject.csproj");
+        var testProj = PackageFor("bar", "2.3.4", "someproject.tests{sep}someproject.tests.csproj", aProj);
+
+        var items = new List<PackageInProject>
         {
-            var aProj = PackageFor("foo", "1.2.3", "someproject{sep}someproject.csproj");
-            var testProj = PackageFor("bar", "2.3.4", "someproject.tests{sep}someproject.tests.csproj", aProj);
+            aProj,
+            testProj
+        };
 
-            var items = new List<PackageInProject>
-            {
-                testProj,
-                aProj
-            };
+        var logger = Substitute.For<INuKeeperLogger>();
 
-            var logger = Substitute.For<INuKeeperLogger>();
+        var sorter = new PackageInProjectTopologicalSort(logger);
 
-            var sorter = new PackageInProjectTopologicalSort(logger);
+        var sorted = sorter.Sort(items)
+            .ToList();
 
-            var sorted = sorter.Sort(items)
-                .ToList();
+        AssertIsASortOf(sorted, items);
+        Assert.That(sorted[0], Is.EqualTo(testProj));
+        Assert.That(sorted[1], Is.EqualTo(aProj));
 
-            AssertIsASortOf(sorted, items);
-            Assert.That(sorted[0], Is.EqualTo(items[0]));
-            Assert.That(sorted[1], Is.EqualTo(items[1]));
+        logger.Received(1).Detailed(Arg.Is<string>(s =>
+            s.StartsWith("Resorted 2 projects by dependencies,", StringComparison.OrdinalIgnoreCase)));
+    }
 
-            logger.DidNotReceive().Detailed("No dependencies between items, no need to sort on dependencies");
-            logger.Received(1).Detailed("Sorted 2 projects by dependencies but no change made");
-        }
+    [Test]
+    public void CanSortWithCycle()
+    {
+        var aProj = PackageFor("foo", "1.2.3", "someproject{sep}someproject.csproj");
+        var testProj = PackageFor("bar", "2.3.4", "someproject.tests{sep}someproject.tests.csproj", aProj);
+        // fake a circular ref - aproj is a new object but the same file path as above
+        aProj = PackageFor("foo", "1.2.3", "someproject{sep}someproject.csproj", testProj);
 
-        [Test]
-        public void CanSortTwoRelatedItemsinReverseOrder()
+        var items = new List<PackageInProject>
         {
-            var aProj = PackageFor("foo", "1.2.3", "someproject{sep}someproject.csproj");
-            var testProj = PackageFor("bar", "2.3.4", "someproject.tests{sep}someproject.tests.csproj", aProj);
+            aProj,
+            testProj
+        };
 
-            var items = new List<PackageInProject>
-            {
-                aProj,
-                testProj
-            };
+        var logger = Substitute.For<INuKeeperLogger>();
 
-            var logger = Substitute.For<INuKeeperLogger>();
+        var sorter = new PackageInProjectTopologicalSort(logger);
 
-            var sorter = new PackageInProjectTopologicalSort(logger);
+        var sorted = sorter.Sort(items)
+            .ToList();
 
-            var sorted = sorter.Sort(items)
-                .ToList();
+        AssertIsASortOf(sorted, items);
+        logger.Received(1).Minimal(Arg.Is<string>(s =>
+            s.StartsWith("Cannot sort by dependencies, cycle found at item", StringComparison.OrdinalIgnoreCase)));
+    }
 
-            AssertIsASortOf(sorted, items);
-            Assert.That(sorted[0], Is.EqualTo(testProj));
-            Assert.That(sorted[1], Is.EqualTo(aProj));
+    private static void AssertIsASortOf(List<PackageInProject> sorted, List<PackageInProject> original)
+    {
+        Assert.That(sorted, Is.Not.Null);
+        Assert.That(sorted, Is.Not.Empty);
+        Assert.That(sorted.Count, Is.EqualTo(original.Count));
+        CollectionAssert.AreEquivalent(sorted, original);
+    }
 
-            logger.Received(1).Detailed(Arg.Is<string>(s =>
-                s.StartsWith("Resorted 2 projects by dependencies,", StringComparison.OrdinalIgnoreCase)));
-        }
+    private static PackageInProject PackageFor(string packageId, string packageVersion,
+        string relativePath, PackageInProject refProject = null)
+    {
+        relativePath =
+            relativePath.Replace("{sep}", $"{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase);
+        var basePath = "c_temp" + Path.DirectorySeparatorChar + "test";
 
-        [Test]
-        public void CanSortWithCycle()
-        {
-            var aProj = PackageFor("foo", "1.2.3", "someproject{sep}someproject.csproj");
-            var testProj = PackageFor("bar", "2.3.4", "someproject.tests{sep}someproject.tests.csproj", aProj);
-            // fake a circular ref - aproj is a new object but the same file path as above
-            aProj = PackageFor("foo", "1.2.3", "someproject{sep}someproject.csproj", testProj);
+        var refs = new List<string>();
 
-            var items = new List<PackageInProject>
-            {
-                aProj,
-                testProj
-            };
+        if (refProject != null) refs.Add(refProject.Path.FullName);
 
-            var logger = Substitute.For<INuKeeperLogger>();
+        var packageVersionRange = PackageVersionRange.Parse(packageId, packageVersion);
 
-            var sorter = new PackageInProjectTopologicalSort(logger);
-
-            var sorted = sorter.Sort(items)
-                .ToList();
-
-            AssertIsASortOf(sorted, items);
-            logger.Received(1).Minimal(Arg.Is<string>(
-                s => s.StartsWith("Cannot sort by dependencies, cycle found at item", StringComparison.OrdinalIgnoreCase)));
-        }
-
-        private static void AssertIsASortOf(List<PackageInProject> sorted, List<PackageInProject> original)
-        {
-            Assert.That(sorted, Is.Not.Null);
-            Assert.That(sorted, Is.Not.Empty);
-            Assert.That(sorted.Count, Is.EqualTo(original.Count));
-            CollectionAssert.AreEquivalent(sorted, original);
-        }
-
-        private static PackageInProject PackageFor(string packageId, string packageVersion,
-            string relativePath, PackageInProject refProject = null)
-        {
-            relativePath = relativePath.Replace("{sep}", $"{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase);
-            var basePath = "c_temp" + Path.DirectorySeparatorChar + "test";
-
-            var refs = new List<string>();
-
-            if (refProject != null)
-            {
-                refs.Add(refProject.Path.FullName);
-            }
-
-            var packageVersionRange = PackageVersionRange.Parse(packageId, packageVersion);
-
-            return new PackageInProject(packageVersionRange,
-                new PackagePath(basePath, relativePath, PackageReferenceType.ProjectFile),
-                refs);
-        }
+        return new PackageInProject(packageVersionRange,
+            new PackagePath(basePath, relativePath, PackageReferenceType.ProjectFile),
+            refs);
     }
 }

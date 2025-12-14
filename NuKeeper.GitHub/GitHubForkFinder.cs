@@ -1,171 +1,149 @@
-using System;
-using System.Threading.Tasks;
 using NuKeeper.Abstractions.CollaborationModels;
 using NuKeeper.Abstractions.CollaborationPlatform;
 using NuKeeper.Abstractions.Configuration;
 using NuKeeper.Abstractions.Logging;
 
-namespace NuKeeper.GitHub
+namespace NuKeeper.GitHub;
+
+public class GitHubForkFinder : IForkFinder
 {
-    public class GitHubForkFinder : IForkFinder
+    private readonly ICollaborationPlatform _collaborationPlatform;
+    private readonly ForkMode _forkMode;
+    private readonly INuKeeperLogger _logger;
+
+    public GitHubForkFinder(ICollaborationPlatform collaborationPlatform, INuKeeperLogger logger, ForkMode forkMode)
     {
-        private readonly ICollaborationPlatform _collaborationPlatform;
-        private readonly INuKeeperLogger _logger;
-        private readonly ForkMode _forkMode;
+        _collaborationPlatform = collaborationPlatform;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _forkMode = forkMode;
 
-        public GitHubForkFinder(ICollaborationPlatform collaborationPlatform, INuKeeperLogger logger, ForkMode forkMode)
+        _logger.Detailed($"FindPushFork. Fork Mode is {_forkMode}");
+    }
+
+    public async Task<ForkData> FindPushFork(string userName, ForkData fallbackFork)
+    {
+        if (fallbackFork == null) throw new ArgumentNullException(nameof(fallbackFork));
+
+        switch (_forkMode)
         {
-            _collaborationPlatform = collaborationPlatform;
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _forkMode = forkMode;
+            case ForkMode.PreferFork:
+                return await FindUserForkOrUpstream(userName, fallbackFork).ConfigureAwait(false);
 
-            _logger.Detailed($"FindPushFork. Fork Mode is {_forkMode}");
+            case ForkMode.PreferSingleRepository:
+                return await FindUpstreamRepoOrUserFork(userName, fallbackFork).ConfigureAwait(false);
+
+            case ForkMode.SingleRepositoryOnly:
+                return await FindUpstreamRepoOnly(fallbackFork).ConfigureAwait(false);
+
+            default:
+                throw new ArgumentOutOfRangeException($"Unknown fork mode: {_forkMode}");
+        }
+    }
+
+    private async Task<ForkData> FindUserForkOrUpstream(string userName, ForkData pullFork)
+    {
+        var userFork = await TryFindUserFork(userName, pullFork).ConfigureAwait(false);
+        if (userFork != null) return userFork;
+
+        // as a fallback, we want to pull and push from the same origin repo.
+        var canUseOriginRepo = await IsPushableRepo(pullFork).ConfigureAwait(false);
+        if (canUseOriginRepo)
+        {
+            _logger.Normal(
+                $"No fork for user {userName}. Using upstream fork for user {pullFork.Owner} at {pullFork.Uri}");
+            return pullFork;
         }
 
-        public async Task<ForkData> FindPushFork(string userName, ForkData fallbackFork)
+        NoPushableForkFound(pullFork.Name);
+        return null;
+    }
+
+    private async Task<ForkData> FindUpstreamRepoOrUserFork(string userName, ForkData pullFork)
+    {
+        // prefer to pull and push from the same origin repo.
+        var canUseOriginRepo = await IsPushableRepo(pullFork).ConfigureAwait(false);
+        if (canUseOriginRepo)
         {
-            if (fallbackFork == null)
-            {
-                throw new ArgumentNullException(nameof(fallbackFork));
-            }
-
-            switch (_forkMode)
-            {
-                case ForkMode.PreferFork:
-                    return await FindUserForkOrUpstream(userName, fallbackFork).ConfigureAwait(false);
-
-                case ForkMode.PreferSingleRepository:
-                    return await FindUpstreamRepoOrUserFork(userName, fallbackFork).ConfigureAwait(false);
-
-                case ForkMode.SingleRepositoryOnly:
-                    return await FindUpstreamRepoOnly(fallbackFork).ConfigureAwait(false);
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown fork mode: {_forkMode}");
-            }
+            _logger.Normal($"Using upstream fork as push, for user {pullFork.Owner} at {pullFork.Uri}");
+            return pullFork;
         }
 
-        private async Task<ForkData> FindUserForkOrUpstream(string userName, ForkData pullFork)
+        // fall back to trying a fork
+        var userFork = await TryFindUserFork(userName, pullFork).ConfigureAwait(false);
+        if (userFork != null) return userFork;
+
+        NoPushableForkFound(pullFork.Name);
+        return null;
+    }
+
+    private async Task<ForkData> FindUpstreamRepoOnly(ForkData pullFork)
+    {
+        // Only want to pull and push from the same origin repo.
+        var canUseOriginRepo = await IsPushableRepo(pullFork).ConfigureAwait(false);
+        if (canUseOriginRepo)
         {
-            var userFork = await TryFindUserFork(userName, pullFork).ConfigureAwait(false);
-            if (userFork != null)
-            {
-                return userFork;
-            }
+            _logger.Normal($"Using upstream fork as push, for user {pullFork.Owner} at {pullFork.Uri}");
+            return pullFork;
+        }
 
-            // as a fallback, we want to pull and push from the same origin repo.
-            var canUseOriginRepo = await IsPushableRepo(pullFork).ConfigureAwait(false);
-            if (canUseOriginRepo)
-            {
-                _logger.Normal($"No fork for user {userName}. Using upstream fork for user {pullFork.Owner} at {pullFork.Uri}");
-                return pullFork;
-            }
+        NoPushableForkFound(pullFork.Name);
+        return null;
+    }
 
-            NoPushableForkFound(pullFork.Name);
+    private void NoPushableForkFound(string name)
+    {
+        _logger.Error($"No pushable fork found for {name} in mode {_forkMode}");
+    }
+
+    private async Task<bool> IsPushableRepo(ForkData originFork)
+    {
+        var originRepo = await _collaborationPlatform.GetUserRepository(originFork.Owner, originFork.Name)
+            .ConfigureAwait(false);
+        return originRepo != null && originRepo.UserPermissions.Push;
+    }
+
+    private async Task<ForkData> TryFindUserFork(string userName, ForkData originFork)
+    {
+        var userFork = await _collaborationPlatform.GetUserRepository(userName, originFork.Name).ConfigureAwait(false);
+        if (userFork != null)
+        {
+            var isMatchingFork = RepoIsForkOf(userFork, originFork.Uri);
+            var forkIsPushable = userFork.UserPermissions.Push;
+            if (isMatchingFork && forkIsPushable)
+                // the user has a pushable fork
+                return RepositoryToForkData(userFork);
+
+            // the user has a repo of that name, but it can't be used. 
+            // Don't try to create it
+            _logger.Normal(
+                $"User '{userName}' fork of '{originFork.Name}' exists but is unsuitable. Matching: {isMatchingFork}. Pushable: {forkIsPushable}");
             return null;
         }
 
-        private async Task<ForkData> FindUpstreamRepoOrUserFork(string userName, ForkData pullFork)
-        {
-            // prefer to pull and push from the same origin repo.
-            var canUseOriginRepo = await IsPushableRepo(pullFork).ConfigureAwait(false);
-            if (canUseOriginRepo)
-            {
-                _logger.Normal($"Using upstream fork as push, for user {pullFork.Owner} at {pullFork.Uri}");
-                return pullFork;
-            }
+        // no user fork exists, try and create it as a fork of the main repo
+        var newFork = await _collaborationPlatform.MakeUserFork(originFork.Owner, originFork.Name)
+            .ConfigureAwait(false);
+        if (newFork != null) return RepositoryToForkData(newFork);
 
-            // fall back to trying a fork
-            var userFork = await TryFindUserFork(userName, pullFork).ConfigureAwait(false);
-            if (userFork != null)
-            {
-                return userFork;
-            }
+        return null;
+    }
 
-            NoPushableForkFound(pullFork.Name);
-            return null;
-        }
+    private static bool RepoIsForkOf(Repository userRepo, Uri originRepo)
+    {
+        if (!userRepo.Fork) return false;
 
-        private async Task<ForkData> FindUpstreamRepoOnly(ForkData pullFork)
-        {
-            // Only want to pull and push from the same origin repo.
-            var canUseOriginRepo = await IsPushableRepo(pullFork).ConfigureAwait(false);
-            if (canUseOriginRepo)
-            {
-                _logger.Normal($"Using upstream fork as push, for user {pullFork.Owner} at {pullFork.Uri}");
-                return pullFork;
-            }
+        if (userRepo.Parent?.CloneUrl == null) return false;
 
-            NoPushableForkFound(pullFork.Name);
-            return null;
-        }
+        if (originRepo == null) return false;
 
-        private void NoPushableForkFound(string name)
-        {
-            _logger.Error($"No pushable fork found for {name} in mode {_forkMode}");
-        }
+        var userParentUrl = GithubUriHelpers.Normalise(userRepo.Parent.CloneUrl);
+        var originUrl = GithubUriHelpers.Normalise(originRepo);
 
-        private async Task<bool> IsPushableRepo(ForkData originFork)
-        {
-            var originRepo = await _collaborationPlatform.GetUserRepository(originFork.Owner, originFork.Name).ConfigureAwait(false);
-            return originRepo != null && originRepo.UserPermissions.Push;
-        }
+        return userParentUrl.Equals(originUrl);
+    }
 
-        private async Task<ForkData> TryFindUserFork(string userName, ForkData originFork)
-        {
-            var userFork = await _collaborationPlatform.GetUserRepository(userName, originFork.Name).ConfigureAwait(false);
-            if (userFork != null)
-            {
-                var isMatchingFork = RepoIsForkOf(userFork, originFork.Uri);
-                var forkIsPushable = userFork.UserPermissions.Push;
-                if (isMatchingFork && forkIsPushable)
-                {
-                    // the user has a pushable fork
-                    return RepositoryToForkData(userFork);
-                }
-
-                // the user has a repo of that name, but it can't be used. 
-                // Don't try to create it
-                _logger.Normal($"User '{userName}' fork of '{originFork.Name}' exists but is unsuitable. Matching: {isMatchingFork}. Pushable: {forkIsPushable}");
-                return null;
-            }
-
-            // no user fork exists, try and create it as a fork of the main repo
-            var newFork = await _collaborationPlatform.MakeUserFork(originFork.Owner, originFork.Name).ConfigureAwait(false);
-            if (newFork != null)
-            {
-                return RepositoryToForkData(newFork);
-            }
-
-            return null;
-        }
-
-        private static bool RepoIsForkOf(Repository userRepo, Uri originRepo)
-        {
-            if (!userRepo.Fork)
-            {
-                return false;
-            }
-
-            if (userRepo.Parent?.CloneUrl == null)
-            {
-                return false;
-            }
-
-            if (originRepo == null)
-            {
-                return false;
-            }
-
-            var userParentUrl = GithubUriHelpers.Normalise(userRepo.Parent.CloneUrl);
-            var originUrl = GithubUriHelpers.Normalise(originRepo);
-
-            return userParentUrl.Equals(originUrl);
-        }
-
-        private static ForkData RepositoryToForkData(Repository repo)
-        {
-            return new ForkData(repo.CloneUrl, repo.Owner.Login, repo.Name);
-        }
+    private static ForkData RepositoryToForkData(Repository repo)
+    {
+        return new ForkData(repo.CloneUrl, repo.Owner.Login, repo.Name);
     }
 }

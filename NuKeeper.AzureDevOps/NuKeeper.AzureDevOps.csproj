@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\NuKeeper.Abstractions\NuKeeper.Abstractions.csproj" />
+    <ProjectReference Include="..\NuKeeper.Abstractions\NuKeeper.Abstractions.csproj"/>
   </ItemGroup>
 </Project>

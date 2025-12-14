@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using NSubstitute;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.Inspections.Files;
@@ -9,87 +6,86 @@ using NuKeeper.Abstractions.RepositoryInspection;
 using NuKeeper.Update.Process;
 using NUnit.Framework;
 
-namespace NuKeeper.Tests.Engine
+namespace NuKeeper.Tests.Engine;
+
+[TestFixture]
+public class SolutionsRestoreTests
 {
-    [TestFixture]
-    public class SolutionsRestoreTests
+    [Test]
+    public async Task WhenThereAreNoSolutionsTheCommandIsNotCalled()
     {
-        [Test]
-        public async Task WhenThereAreNoSolutionsTheCommandIsNotCalled()
-        {
-            var cmd = Substitute.For<IFileRestoreCommand>();
-            var folder = Substitute.For<IFolder>();
+        var cmd = Substitute.For<IFileRestoreCommand>();
+        var folder = Substitute.For<IFolder>();
 
-            var packages = new List<PackageUpdateSet>();
+        var packages = new List<PackageUpdateSet>();
 
-            var solutionRestore = new SolutionRestore(cmd);
+        var solutionRestore = new SolutionRestore(cmd);
 
-            await solutionRestore.CheckRestore(packages, folder, NuGetSources.GlobalFeed);
+        await solutionRestore.CheckRestore(packages, folder, NuGetSources.GlobalFeed);
 
-            await cmd.DidNotReceiveWithAnyArgs()
-                .Invoke(Arg.Any<FileInfo>(), Arg.Any<NuGetSources>());
-        }
+        await cmd.DidNotReceiveWithAnyArgs()
+            .Invoke(Arg.Any<FileInfo>(), Arg.Any<NuGetSources>());
+    }
 
-        [Test]
-        public async Task WhenThereAreNoMatchingPackagesTheCommandIsNotCalled()
-        {
-            var packages = PackageUpdates.ForPackageRefType(PackageReferenceType.ProjectFile)
-                .InList();
+    [Test]
+    public async Task WhenThereAreNoMatchingPackagesTheCommandIsNotCalled()
+    {
+        var packages = PackageUpdates.ForPackageRefType(PackageReferenceType.ProjectFile)
+            .InList();
 
-            var sln = new FileInfo("foo.sln");
+        var sln = new FileInfo("foo.sln");
 
-            var cmd = Substitute.For<IFileRestoreCommand>();
-            var folder = Substitute.For<IFolder>();
-            folder.Find(Arg.Any<string>()).Returns(new[] { sln });
+        var cmd = Substitute.For<IFileRestoreCommand>();
+        var folder = Substitute.For<IFolder>();
+        folder.Find(Arg.Any<string>()).Returns(new[] { sln });
 
-            var solutionRestore = new SolutionRestore(cmd);
+        var solutionRestore = new SolutionRestore(cmd);
 
-            await solutionRestore.CheckRestore(packages, folder, NuGetSources.GlobalFeed);
+        await solutionRestore.CheckRestore(packages, folder, NuGetSources.GlobalFeed);
 
-            await cmd.DidNotReceiveWithAnyArgs()
-                .Invoke(Arg.Any<FileInfo>(), Arg.Any<NuGetSources>());
-        }
+        await cmd.DidNotReceiveWithAnyArgs()
+            .Invoke(Arg.Any<FileInfo>(), Arg.Any<NuGetSources>());
+    }
 
-        [Test]
-        public async Task WhenThereIsOneSolutionsTheCommandIsCalled()
-        {
-            var packages = PackageUpdates.ForPackageRefType(PackageReferenceType.PackagesConfig)
-                .InList();
+    [Test]
+    public async Task WhenThereIsOneSolutionsTheCommandIsCalled()
+    {
+        var packages = PackageUpdates.ForPackageRefType(PackageReferenceType.PackagesConfig)
+            .InList();
 
-            var sln = new FileInfo("foo.sln");
+        var sln = new FileInfo("foo.sln");
 
-            var cmd = Substitute.For<IFileRestoreCommand>();
-            var folder = Substitute.For<IFolder>();
-            folder.Find(Arg.Any<string>()).Returns(new[] { sln });
+        var cmd = Substitute.For<IFileRestoreCommand>();
+        var folder = Substitute.For<IFolder>();
+        folder.Find(Arg.Any<string>()).Returns(new[] { sln });
 
-            var solutionRestore = new SolutionRestore(cmd);
+        var solutionRestore = new SolutionRestore(cmd);
 
-            await solutionRestore.CheckRestore(packages, folder, NuGetSources.GlobalFeed);
+        await solutionRestore.CheckRestore(packages, folder, NuGetSources.GlobalFeed);
 
-            await cmd.Received(1).Invoke(Arg.Any<FileInfo>(), Arg.Any<NuGetSources>());
-            await cmd.Received().Invoke(sln, Arg.Any<NuGetSources>());
-        }
+        await cmd.Received(1).Invoke(Arg.Any<FileInfo>(), Arg.Any<NuGetSources>());
+        await cmd.Received().Invoke(sln, Arg.Any<NuGetSources>());
+    }
 
-        [Test]
-        public async Task WhenThereAreTwoSolutionsTheCommandIsCalledForEachOfThem()
-        {
-            var packages = PackageUpdates.ForPackageRefType(PackageReferenceType.PackagesConfig)
-                .InList();
+    [Test]
+    public async Task WhenThereAreTwoSolutionsTheCommandIsCalledForEachOfThem()
+    {
+        var packages = PackageUpdates.ForPackageRefType(PackageReferenceType.PackagesConfig)
+            .InList();
 
-            var sln1 = new FileInfo("foo.sln");
-            var sln2 = new FileInfo("bar.sln");
+        var sln1 = new FileInfo("foo.sln");
+        var sln2 = new FileInfo("bar.sln");
 
-            var cmd = Substitute.For<IFileRestoreCommand>();
-            var folder = Substitute.For<IFolder>();
-            folder.Find(Arg.Any<string>()).Returns(new[] { sln1, sln2 });
+        var cmd = Substitute.For<IFileRestoreCommand>();
+        var folder = Substitute.For<IFolder>();
+        folder.Find(Arg.Any<string>()).Returns(new[] { sln1, sln2 });
 
-            var solutionRestore = new SolutionRestore(cmd);
+        var solutionRestore = new SolutionRestore(cmd);
 
-            await solutionRestore.CheckRestore(packages, folder, NuGetSources.GlobalFeed);
+        await solutionRestore.CheckRestore(packages, folder, NuGetSources.GlobalFeed);
 
-            await cmd.Received(2).Invoke(Arg.Any<FileInfo>(), Arg.Any<NuGetSources>());
-            await cmd.Received().Invoke(sln1, Arg.Any<NuGetSources>());
-            await cmd.Received().Invoke(sln2, Arg.Any<NuGetSources>());
-        }
+        await cmd.Received(2).Invoke(Arg.Any<FileInfo>(), Arg.Any<NuGetSources>());
+        await cmd.Received().Invoke(sln1, Arg.Any<NuGetSources>());
+        await cmd.Received().Invoke(sln2, Arg.Any<NuGetSources>());
     }
 }

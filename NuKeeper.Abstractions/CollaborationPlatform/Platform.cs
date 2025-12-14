@@ -1,12 +1,11 @@
-namespace NuKeeper.Abstractions.CollaborationPlatform
+namespace NuKeeper.Abstractions.CollaborationPlatform;
+
+public enum Platform
 {
-    public enum Platform
-    {
-        GitHub,
-        AzureDevOps,
-        Bitbucket,
-        BitbucketLocal,
-        GitLab,
-        Gitea
-    }
+    GitHub,
+    AzureDevOps,
+    Bitbucket,
+    BitbucketLocal,
+    GitLab,
+    Gitea
 }

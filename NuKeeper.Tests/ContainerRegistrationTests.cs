@@ -1,48 +1,46 @@
-using System;
 using NuKeeper.Collaboration;
 using NuKeeper.Commands;
-using NUnit.Framework;
 using NuKeeper.Local;
+using NUnit.Framework;
 
-namespace NuKeeper.Tests
+namespace NuKeeper.Tests;
+
+[TestFixture]
+public class ContainerRegistrationTests
 {
-    [TestFixture]
-    public class ContainerRegistrationTests
+    [Test]
+    public void RootCanBeResolved()
     {
-        [Test]
-        public void RootCanBeResolved()
-        {
-            var container = ContainerRegistration.Init();
+        var container = ContainerRegistration.Init();
 
-            var engine = container.GetInstance<ICollaborationEngine>();
+        var engine = container.GetInstance<ICollaborationEngine>();
 
-            Assert.That(engine, Is.Not.Null);
-            Assert.That(engine, Is.TypeOf<CollaborationEngine>());
-        }
+        Assert.That(engine, Is.Not.Null);
+        Assert.That(engine, Is.TypeOf<CollaborationEngine>());
+    }
 
-        [Test]
-        public void InspectorCanBeResolved()
-        {
-            var container = ContainerRegistration.Init();
+    [Test]
+    public void InspectorCanBeResolved()
+    {
+        var container = ContainerRegistration.Init();
 
-            var inspector = container.GetInstance<ILocalEngine>();
+        var inspector = container.GetInstance<ILocalEngine>();
 
-            Assert.That(inspector, Is.Not.Null);
-            Assert.That(inspector, Is.TypeOf<LocalEngine>());
-        }
+        Assert.That(inspector, Is.Not.Null);
+        Assert.That(inspector, Is.TypeOf<LocalEngine>());
+    }
 
-        [TestCase(typeof(InspectCommand))]
-        [TestCase(typeof(UpdateCommand))]
-        [TestCase(typeof(RepositoryCommand))]
-        [TestCase(typeof(OrganisationCommand))]
-        [TestCase(typeof(GlobalCommand))]
-        public void CommandsCanBeResolved(Type commandType)
-        {
-            var container = ContainerRegistration.Init();
+    [TestCase(typeof(InspectCommand))]
+    [TestCase(typeof(UpdateCommand))]
+    [TestCase(typeof(RepositoryCommand))]
+    [TestCase(typeof(OrganisationCommand))]
+    [TestCase(typeof(GlobalCommand))]
+    public void CommandsCanBeResolved(Type commandType)
+    {
+        var container = ContainerRegistration.Init();
 
-            var command = container.GetInstance(commandType);
+        var command = container.GetInstance(commandType);
 
-            Assert.That(command, Is.Not.Null);
-        }
+        Assert.That(command, Is.Not.Null);
     }
 }

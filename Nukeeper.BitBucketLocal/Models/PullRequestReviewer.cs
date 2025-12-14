@@ -1,10 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace NuKeeper.BitBucketLocal.Models
+namespace NuKeeper.BitBucketLocal.Models;
+
+public class PullRequestReviewer
 {
-    public class PullRequestReviewer
-    {
-        [JsonPropertyName("user")]
-        public Reviewer User { get; set; }
-    }
+    [JsonPropertyName("user")] public Reviewer User { get; set; }
 }

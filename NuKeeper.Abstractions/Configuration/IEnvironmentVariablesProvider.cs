@@ -1,8 +1,7 @@
-namespace NuKeeper.Abstractions.Configuration
+namespace NuKeeper.Abstractions.Configuration;
+
+public interface IEnvironmentVariablesProvider
 {
-    public interface IEnvironmentVariablesProvider
-    {
-        string GetEnvironmentVariable(string name);
-        string GetUserName();
-    }
+    string GetEnvironmentVariable(string name);
+    string GetUserName();
 }

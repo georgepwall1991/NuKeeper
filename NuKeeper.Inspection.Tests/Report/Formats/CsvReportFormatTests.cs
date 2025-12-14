@@ -1,90 +1,86 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using NuKeeper.Abstractions.NuGet;
 using NuKeeper.Abstractions.RepositoryInspection;
 using NuKeeper.Inspection.Report.Formats;
 using NUnit.Framework;
 
-namespace NuKeeper.Inspection.Tests.Report.Formats
+namespace NuKeeper.Inspection.Tests.Report.Formats;
+
+[TestFixture]
+public class CsvReportFormatTests
 {
-    [TestFixture]
-    public class CsvReportFormatTests
+    [Test]
+    public void NoRowsHasHeaderLineInOutput()
     {
-        [Test]
-        public void NoRowsHasHeaderLineInOutput()
+        var rows = new List<PackageUpdateSet>();
+
+        var output = ReportToString(rows);
+
+        Assert.That(output, Is.Not.Null);
+        Assert.That(output, Is.Not.Empty);
+
+        var lines = output.Split(Environment.NewLine);
+        Assert.That(lines.Length, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void OneRowHasOutput()
+    {
+        var rows = PackageUpdates.OnePackageUpdateSet();
+
+        var output = ReportToString(rows);
+
+        Assert.That(output, Is.Not.Null);
+        Assert.That(output, Is.Not.Empty);
+
+        var lines = output.Split(Environment.NewLine);
+        Assert.That(lines.Length, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void OneRowHasMatchedCommas()
+    {
+        var rows = new List<PackageUpdateSet>();
+
+        var output = ReportToString(rows);
+        var lines = output.Split(Environment.NewLine);
+
+        foreach (var line in lines)
         {
-            var rows = new List<PackageUpdateSet>();
-
-            var output = ReportToString(rows);
-
-            Assert.That(output, Is.Not.Null);
-            Assert.That(output, Is.Not.Empty);
-
-            var lines = output.Split(Environment.NewLine);
-            Assert.That(lines.Length, Is.EqualTo(1));
+            var commas = line.Count(c => c == ',');
+            Assert.That(commas, Is.EqualTo(11), $"Failed on line {line}");
         }
+    }
 
-        [Test]
-        public void OneRowHasOutput()
+    [Test]
+    public void TwoRowsHaveOutput()
+    {
+        var package1 = PackageVersionRange.Parse("foo.bar", "1.2.3");
+        var package2 = PackageVersionRange.Parse("fish", "2.3.4");
+
+        var rows = new List<PackageUpdateSet>
         {
-            var rows = PackageUpdates.OnePackageUpdateSet();
+            PackageUpdates.UpdateSetFor(package1, PackageUpdates.MakePackageForV110(package1)),
+            PackageUpdates.UpdateSetFor(package2, PackageUpdates.MakePackageForV110(package2))
+        };
 
-            var output = ReportToString(rows);
+        var output = ReportToString(rows);
 
-            Assert.That(output, Is.Not.Null);
-            Assert.That(output, Is.Not.Empty);
+        Assert.That(output, Is.Not.Null);
+        Assert.That(output, Is.Not.Empty);
 
-            var lines = output.Split(Environment.NewLine);
-            Assert.That(lines.Length, Is.EqualTo(2));
-        }
+        var lines = output.Split(Environment.NewLine);
+        Assert.That(lines.Length, Is.EqualTo(3));
+        Assert.That(lines[1], Does.Contain("foo.bar,"));
+        Assert.That(lines[2], Does.Contain("fish,"));
+    }
 
-        [Test]
-        public void OneRowHasMatchedCommas()
-        {
-            var rows = new List<PackageUpdateSet>();
+    private static string ReportToString(List<PackageUpdateSet> rows)
+    {
+        var output = new TestReportWriter();
 
-            var output = ReportToString(rows);
-            var lines = output.Split(Environment.NewLine);
+        var reporter = new CsvReportFormat(output);
+        reporter.Write("test", rows);
 
-            foreach (var line in lines)
-            {
-                var commas = line.Count(c => c == ',');
-                Assert.That(commas, Is.EqualTo(11), $"Failed on line {line}");
-            }
-        }
-
-        [Test]
-        public void TwoRowsHaveOutput()
-        {
-            var package1 = PackageVersionRange.Parse("foo.bar", "1.2.3");
-            var package2 = PackageVersionRange.Parse("fish", "2.3.4");
-
-            var rows = new List<PackageUpdateSet>
-            {
-                PackageUpdates.UpdateSetFor(package1, PackageUpdates.MakePackageForV110(package1)),
-                PackageUpdates.UpdateSetFor(package2, PackageUpdates.MakePackageForV110(package2))
-            };
-
-            var output = ReportToString(rows);
-
-            Assert.That(output, Is.Not.Null);
-            Assert.That(output, Is.Not.Empty);
-
-            var lines = output.Split(Environment.NewLine);
-            Assert.That(lines.Length, Is.EqualTo(3));
-            Assert.That(lines[1], Does.Contain("foo.bar,"));
-            Assert.That(lines[2], Does.Contain("fish,"));
-        }
-
-        private static string ReportToString(List<PackageUpdateSet> rows)
-        {
-            var output = new TestReportWriter();
-
-            var reporter = new CsvReportFormat(output);
-            reporter.Write("test", rows);
-
-            return output.Data();
-        }
+        return output.Data();
     }
 }

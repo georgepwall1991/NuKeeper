@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using NSubstitute;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
@@ -13,177 +9,177 @@ using NuKeeper.Abstractions.NuGetApi;
 using NuKeeper.Inspection.NuGetApi;
 using NUnit.Framework;
 
-namespace NuKeeper.Inspection.Tests.NuGetApi
+namespace NuKeeper.Inspection.Tests.NuGetApi;
+
+[TestFixture]
+public class BulkPackageLookupTests
 {
-    [TestFixture]
-    public class BulkPackageLookupTests
+    [Test]
+    public async Task CanLookupEmptyList()
     {
-        [Test]
-        public async Task CanLookupEmptyList()
+        var apiLookup = Substitute.For<IApiPackageLookup>();
+        var bulkLookup = BuildBulkPackageLookup(apiLookup);
+
+        var results = await bulkLookup.FindVersionUpdates(
+            Enumerable.Empty<PackageIdentity>(),
+            NuGetSources.GlobalFeed,
+            VersionChange.Major,
+            UsePrerelease.FromPrerelease);
+
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results, Is.Empty);
+
+        await apiLookup.DidNotReceive().FindVersionUpdate(
+            Arg.Any<PackageIdentity>(), Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>());
+    }
+
+    [Test]
+    public async Task CanLookupOnePackage()
+    {
+        var apiLookup = Substitute.For<IApiPackageLookup>();
+
+        ApiHasNewVersionForPackage(apiLookup, "foo");
+
+        var bulkLookup = BuildBulkPackageLookup(apiLookup);
+
+        var queries = new List<PackageIdentity>
         {
-            var apiLookup = Substitute.For<IApiPackageLookup>();
-            var bulkLookup = BuildBulkPackageLookup(apiLookup);
+            new("foo", new NuGetVersion(1, 2, 3))
+        };
 
-            var results = await bulkLookup.FindVersionUpdates(
-                Enumerable.Empty<PackageIdentity>(),
-                NuGetSources.GlobalFeed,
-                VersionChange.Major,
-                UsePrerelease.FromPrerelease);
+        var results = await bulkLookup.FindVersionUpdates(queries,
+            NuGetSources.GlobalFeed,
+            VersionChange.Major,
+            UsePrerelease.FromPrerelease);
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results, Is.Empty);
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results, Is.Not.Empty);
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(results.ElementAt(0).Key.Id, Is.EqualTo("foo"));
+    }
 
-            await apiLookup.DidNotReceive().FindVersionUpdate(
-                Arg.Any<PackageIdentity>(), Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>());
-        }
+    [Test]
+    public async Task LookupOnePackageCallsApiOnce()
+    {
+        var apiLookup = Substitute.For<IApiPackageLookup>();
 
-        [Test]
-        public async Task CanLookupOnePackage()
+        ApiHasNewVersionForPackage(apiLookup, "foo");
+
+        var bulkLookup = BuildBulkPackageLookup(apiLookup);
+
+        var queries = new List<PackageIdentity>
         {
-            var apiLookup = Substitute.For<IApiPackageLookup>();
+            new("foo", new NuGetVersion(1, 2, 3))
+        };
 
-            ApiHasNewVersionForPackage(apiLookup, "foo");
+        await bulkLookup.FindVersionUpdates(queries,
+            NuGetSources.GlobalFeed,
+            VersionChange.Major,
+            UsePrerelease.FromPrerelease);
 
-            var bulkLookup = BuildBulkPackageLookup(apiLookup);
+        await apiLookup.Received(1).FindVersionUpdate(
+            Arg.Any<PackageIdentity>(), Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>());
+    }
 
-            var queries = new List<PackageIdentity>
-            {
-                new PackageIdentity("foo", new NuGetVersion(1, 2, 3))
-            };
+    [Test]
+    public async Task CanLookupTwoPackages()
+    {
+        var apiLookup = Substitute.For<IApiPackageLookup>();
 
-            var results = await bulkLookup.FindVersionUpdates(queries,
-                NuGetSources.GlobalFeed,
-                VersionChange.Major,
-                UsePrerelease.FromPrerelease);
+        ApiHasNewVersionForPackage(apiLookup, "foo");
+        ApiHasNewVersionForPackage(apiLookup, "bar");
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results, Is.Not.Empty);
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(results.ElementAt(0).Key.Id, Is.EqualTo("foo"));
-        }
+        var bulkLookup = BuildBulkPackageLookup(apiLookup);
 
-        [Test]
-        public async Task LookupOnePackageCallsApiOnce()
+        var queries = new List<PackageIdentity>
         {
-            var apiLookup = Substitute.For<IApiPackageLookup>();
+            new("foo", new NuGetVersion(1, 2, 3)),
+            new("bar", new NuGetVersion(1, 2, 3))
+        };
 
-            ApiHasNewVersionForPackage(apiLookup, "foo");
+        var results = await bulkLookup.FindVersionUpdates(queries,
+            NuGetSources.GlobalFeed,
+            VersionChange.Major,
+            UsePrerelease.FromPrerelease);
 
-            var bulkLookup = BuildBulkPackageLookup(apiLookup);
+        var packages = results.Select(kvp => kvp.Key);
+        Assert.That(results.Count, Is.EqualTo(2));
+        Assert.That(packages, Has.Some.Matches<PackageIdentity>(pi => pi.Id == "foo"));
+        Assert.That(packages, Has.Some.Matches<PackageIdentity>(pi => pi.Id == "bar"));
+        Assert.That(packages, Has.None.Matches<PackageIdentity>(pi => pi.Id == "fish"));
+    }
 
-            var queries = new List<PackageIdentity>
-            {
-                new PackageIdentity("foo", new NuGetVersion(1, 2, 3))
-            };
+    [Test]
+    public async Task LookupTwoPackagesCallsApiTwice()
+    {
+        var apiLookup = Substitute.For<IApiPackageLookup>();
 
-            await bulkLookup.FindVersionUpdates(queries,
-                NuGetSources.GlobalFeed,
-                VersionChange.Major,
-                UsePrerelease.FromPrerelease);
+        ApiHasNewVersionForPackage(apiLookup, "foo");
+        ApiHasNewVersionForPackage(apiLookup, "bar");
 
-            await apiLookup.Received(1).FindVersionUpdate(
-                Arg.Any<PackageIdentity>(), Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>());
-        }
+        var bulkLookup = BuildBulkPackageLookup(apiLookup);
 
-        [Test]
-        public async Task CanLookupTwoPackages()
+        var queries = new List<PackageIdentity>
         {
-            var apiLookup = Substitute.For<IApiPackageLookup>();
+            new("foo", new NuGetVersion(1, 2, 3)),
+            new("bar", new NuGetVersion(1, 2, 3))
+        };
 
-            ApiHasNewVersionForPackage(apiLookup, "foo");
-            ApiHasNewVersionForPackage(apiLookup, "bar");
+        await bulkLookup.FindVersionUpdates(queries,
+            NuGetSources.GlobalFeed,
+            VersionChange.Major,
+            UsePrerelease.FromPrerelease);
 
-            var bulkLookup = BuildBulkPackageLookup(apiLookup);
+        await apiLookup.Received(2).FindVersionUpdate(
+            Arg.Any<PackageIdentity>(), Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>());
+    }
 
-            var queries = new List<PackageIdentity>
-            {
-                new PackageIdentity("foo", new NuGetVersion(1, 2, 3)),
-                new PackageIdentity("bar", new NuGetVersion(1, 2, 3))
-            };
+    [Test]
+    public async Task WhenThereAreMultipleVersionOfTheSamePackage()
+    {
+        var apiLookup = Substitute.For<IApiPackageLookup>();
 
-            var results = await bulkLookup.FindVersionUpdates(queries,
-                NuGetSources.GlobalFeed,
-                VersionChange.Major,
-                UsePrerelease.FromPrerelease);
+        ApiHasNewVersionForPackage(apiLookup, "foo");
 
-            var packages = results.Select(kvp => kvp.Key);
-            Assert.That(results.Count, Is.EqualTo(2));
-            Assert.That(packages, Has.Some.Matches<PackageIdentity>(pi => pi.Id == "foo"));
-            Assert.That(packages, Has.Some.Matches<PackageIdentity>(pi => pi.Id == "bar"));
-            Assert.That(packages, Has.None.Matches<PackageIdentity>(pi => pi.Id == "fish"));
-        }
+        var bulkLookup = BuildBulkPackageLookup(apiLookup);
 
-        [Test]
-        public async Task LookupTwoPackagesCallsApiTwice()
+        var queries = new List<PackageIdentity>
         {
-            var apiLookup = Substitute.For<IApiPackageLookup>();
+            new("foo", new NuGetVersion(1, 2, 3)),
+            new("foo", new NuGetVersion(1, 3, 4))
+        };
 
-            ApiHasNewVersionForPackage(apiLookup, "foo");
-            ApiHasNewVersionForPackage(apiLookup, "bar");
+        var results = await bulkLookup.FindVersionUpdates(queries,
+            NuGetSources.GlobalFeed,
+            VersionChange.Major,
+            UsePrerelease.FromPrerelease);
 
-            var bulkLookup = BuildBulkPackageLookup(apiLookup);
+        await apiLookup.Received(1).FindVersionUpdate(
+            Arg.Any<PackageIdentity>(), Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>());
+        await apiLookup.Received(1).FindVersionUpdate(
+            Arg.Is<PackageIdentity>(pi => pi.Id == "foo" && pi.Version == new NuGetVersion(1, 3, 4)),
+            Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>());
 
-            var queries = new List<PackageIdentity>
-            {
-                new PackageIdentity("foo", new NuGetVersion(1, 2, 3)),
-                new PackageIdentity("bar", new NuGetVersion(1, 2, 3))
-            };
+        var packages = results.Select(kvp => kvp.Key);
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(packages, Has.Some.Matches<PackageIdentity>(pi => pi.Id == "foo"));
+        Assert.That(packages, Has.None.Matches<PackageIdentity>(pi => pi.Id == "bar"));
+    }
 
-            await bulkLookup.FindVersionUpdates(queries,
-                NuGetSources.GlobalFeed,
-                VersionChange.Major,
-                UsePrerelease.FromPrerelease);
+    private static void ApiHasNewVersionForPackage(IApiPackageLookup lookup, string packageName)
+    {
+        var responseMetaData = new PackageSearchMetadata(
+            new PackageIdentity(packageName, new NuGetVersion(2, 3, 4)), new PackageSource("http://none"),
+            DateTimeOffset.Now, null);
 
-            await apiLookup.Received(2).FindVersionUpdate(
-                Arg.Any<PackageIdentity>(), Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>());
-        }
+        lookup.FindVersionUpdate(Arg.Is<PackageIdentity>(pm => pm.Id == packageName),
+                Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>())
+            .Returns(new PackageLookupResult(VersionChange.Major, responseMetaData, responseMetaData,
+                responseMetaData));
+    }
 
-        [Test]
-        public async Task WhenThereAreMultipleVersionOfTheSamePackage()
-        {
-            var apiLookup = Substitute.For<IApiPackageLookup>();
-
-            ApiHasNewVersionForPackage(apiLookup, "foo");
-
-            var bulkLookup = BuildBulkPackageLookup(apiLookup);
-
-            var queries = new List<PackageIdentity>
-            {
-                new PackageIdentity("foo", new NuGetVersion(1, 2, 3)),
-                new PackageIdentity("foo", new NuGetVersion(1, 3, 4))
-            };
-
-            var results = await bulkLookup.FindVersionUpdates(queries,
-                NuGetSources.GlobalFeed,
-                VersionChange.Major,
-                UsePrerelease.FromPrerelease);
-
-            await apiLookup.Received(1).FindVersionUpdate(
-                Arg.Any<PackageIdentity>(), Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>());
-            await apiLookup.Received(1).FindVersionUpdate(Arg.Is<PackageIdentity>(
-                pi => pi.Id == "foo" && pi.Version == new NuGetVersion(1, 3, 4)),
-                Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>());
-
-            var packages = results.Select(kvp => kvp.Key);
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(packages, Has.Some.Matches<PackageIdentity>(pi => pi.Id == "foo"));
-            Assert.That(packages, Has.None.Matches<PackageIdentity>(pi => pi.Id == "bar"));
-        }
-
-        private static void ApiHasNewVersionForPackage(IApiPackageLookup lookup, string packageName)
-        {
-            var responseMetaData = new PackageSearchMetadata(
-                new PackageIdentity(packageName, new NuGetVersion(2, 3, 4)), new PackageSource("http://none"),
-                DateTimeOffset.Now, null);
-
-            lookup.FindVersionUpdate(Arg.Is<PackageIdentity>(pm => pm.Id == packageName),
-                    Arg.Any<NuGetSources>(), Arg.Any<VersionChange>(), Arg.Any<UsePrerelease>())
-                .Returns(new PackageLookupResult(VersionChange.Major, responseMetaData, responseMetaData, responseMetaData));
-        }
-
-        private static BulkPackageLookup BuildBulkPackageLookup(IApiPackageLookup apiLookup)
-        {
-            return new BulkPackageLookup(apiLookup, new PackageLookupResultReporter(Substitute.For<INuKeeperLogger>()));
-        }
+    private static BulkPackageLookup BuildBulkPackageLookup(IApiPackageLookup apiLookup)
+    {
+        return new BulkPackageLookup(apiLookup, new PackageLookupResultReporter(Substitute.For<INuKeeperLogger>()));
     }
 }

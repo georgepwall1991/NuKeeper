@@ -1,7 +1,6 @@
-﻿namespace NuKeeper.BitBucket.Models
+﻿namespace NuKeeper.BitBucket.Models;
+
+public class Branch
 {
-    public class Branch
-    {
-        public string name { get; set; }
-    }
+    public string name { get; set; }
 }

@@ -1,92 +1,84 @@
 using NuKeeper.Abstractions.Formats;
 using NuKeeper.Abstractions.RepositoryInspection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace NuKeeper.Engine
+namespace NuKeeper.Engine;
+
+public static class BranchNamer
 {
-    public static class BranchNamer
+    private const string DefaultTemplateMultiple = "nukeeper-update-{Count}-packages-{Hash}";
+    private const string DefaultTemplateSingle = "nukeeper-update-{Name}-to-{Version}";
+    public static readonly string[] TemplateTokens = { "Default", "Name", "Version", "Count", "Hash" };
+
+    public static bool IsValidTemplateToken(string token)
     {
-        public static readonly string[] TemplateTokens = { "Default", "Name", "Version", "Count", "Hash" };
+        return TemplateTokens.Any(t => t.Equals(token, StringComparison.InvariantCultureIgnoreCase));
+    }
 
-        private const string DefaultTemplateMultiple = "nukeeper-update-{Count}-packages-{Hash}";
-        private const string DefaultTemplateSingle = "nukeeper-update-{Name}-to-{Version}";
+    /// <summary>
+    ///     Replaces the tokens in the branchname with the predefined values.
+    /// </summary>
+    /// <param name="updates"></param>
+    /// <param name="branchTemplate"></param>
+    /// <returns></returns>
+    public static string MakeName(IReadOnlyCollection<PackageUpdateSet> updates, string branchTemplate = null)
+    {
+        if (updates == null) throw new ArgumentNullException(nameof(updates));
 
-        public static bool IsValidTemplateToken(string token)
+        var tokenValues = new Dictionary<string, string>();
+
+        foreach (var token in TemplateTokens)
         {
-            return TemplateTokens.Any(t => t.Equals(token, StringComparison.InvariantCultureIgnoreCase));
-        }
-
-        /// <summary>
-        /// Replaces the tokens in the branchname with the predefined values. 
-        /// </summary>
-        /// <param name="updates"></param>
-        /// <param name="branchTemplate"></param>
-        /// <returns></returns>
-        public static string MakeName(IReadOnlyCollection<PackageUpdateSet> updates, string branchTemplate = null)
-        {
-            if (updates == null)
+            var value = "";
+            switch (token)
             {
-                throw new ArgumentNullException(nameof(updates));
+                case "Default":
+                    value = updates.Count == 1 ? DefaultTemplateSingle : DefaultTemplateMultiple;
+                    break;
+                case "Name":
+                    value = updates.Count > 1 ? "Multiple-Packages" : updates.First().SelectedId;
+                    break;
+                case "Version":
+                    //Multiple nugets, same version?
+                    var versions = updates.Select(u => u.SelectedVersion).Distinct();
+                    value = versions.Count() > 1 ? "Multiple-Versions" : $"{versions.First()}";
+                    break;
+                case "Count":
+                    value = $"{updates.Count}";
+                    break;
+                case "Hash":
+                    value = Hasher.Hash(PackageVersionStrings(updates));
+                    break;
             }
 
-            var tokenValues = new Dictionary<string, string>();
-
-            foreach (var token in TemplateTokens)
-            {
-                var value = "";
-                switch (token)
-                {
-                    case "Default":
-                        value = updates.Count == 1 ? DefaultTemplateSingle : DefaultTemplateMultiple;
-                        break;
-                    case "Name":
-                        value = updates.Count > 1 ? "Multiple-Packages" : updates.First().SelectedId;
-                        break;
-                    case "Version":
-                        //Multiple nugets, same version?
-                        var versions = updates.Select(u => u.SelectedVersion).Distinct();
-                        value = versions.Count() > 1 ? "Multiple-Versions" : $"{versions.First()}";
-                        break;
-                    case "Count":
-                        value = $"{updates.Count}";
-                        break;
-                    case "Hash":
-                        value = Hasher.Hash(PackageVersionStrings(updates));
-                        break;
-                }
-                tokenValues.Add(token, value);
-            }
-
-            return MakeName(tokenValues, branchTemplate);
+            tokenValues.Add(token, value);
         }
 
-        /// <summary>
-        /// Replaces the tokens in the branchname with the given values
-        /// </summary>
-        /// <param name="tokenValuePairs"></param>
-        /// <param name="branchTemplate"></param>
-        /// <returns></returns>
-        internal static string MakeName(Dictionary<string, string> tokenValuePairs, string branchTemplate)
-        {
-            var branchName = branchTemplate ?? "{default}";
+        return MakeName(tokenValues, branchTemplate);
+    }
 
-            foreach (KeyValuePair<string, string> kvp in tokenValuePairs)
-            {
-                branchName = branchName.Replace(string.Concat("{", kvp.Key, "}"), kvp.Value, StringComparison.InvariantCultureIgnoreCase);
-            }
-            return branchName.Replace(" ", "-", StringComparison.InvariantCultureIgnoreCase);
-        }
+    /// <summary>
+    ///     Replaces the tokens in the branchname with the given values
+    /// </summary>
+    /// <param name="tokenValuePairs"></param>
+    /// <param name="branchTemplate"></param>
+    /// <returns></returns>
+    internal static string MakeName(Dictionary<string, string> tokenValuePairs, string branchTemplate)
+    {
+        var branchName = branchTemplate ?? "{default}";
 
-        private static string PackageVersionStrings(IReadOnlyCollection<PackageUpdateSet> updates)
-        {
-            return string.Join(",", updates.Select(PackageVersionString));
-        }
+        foreach (var kvp in tokenValuePairs)
+            branchName = branchName.Replace(string.Concat("{", kvp.Key, "}"), kvp.Value,
+                StringComparison.InvariantCultureIgnoreCase);
+        return branchName.Replace(" ", "-", StringComparison.InvariantCultureIgnoreCase);
+    }
 
-        private static string PackageVersionString(PackageUpdateSet updateSet)
-        {
-            return $"{updateSet.SelectedId}-v{updateSet.SelectedVersion}";
-        }
+    private static string PackageVersionStrings(IReadOnlyCollection<PackageUpdateSet> updates)
+    {
+        return string.Join(",", updates.Select(PackageVersionString));
+    }
+
+    private static string PackageVersionString(PackageUpdateSet updateSet)
+    {
+        return $"{updateSet.SelectedId}-v{updateSet.SelectedVersion}";
     }
 }

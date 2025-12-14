@@ -1,9 +1,8 @@
-namespace NuKeeper.Abstractions.Configuration
+namespace NuKeeper.Abstractions.Configuration;
+
+public enum ServerScope
 {
-    public enum ServerScope
-    {
-        Repository,
-        Organisation,
-        Global,
-    }
+    Repository,
+    Organisation,
+    Global
 }

@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <LangVersion>latest</LangVersion>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>warnings</Nullable>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <AnalysisLevel>10.0-recommended</AnalysisLevel>
-    <NoWarn>$(NoWarn);CS8618;CS8625;CS8603;CS8600;CS8601;CS8604;CS8602;CS8629;CS1573;CA1510;CA1860;CA1309;CA2201;CA1305;CA1725;CA1847;CA1854;CA1852;CA1859;CA1861;CA2249;CA1822;SYSLIB0051</NoWarn>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-    <!-- Package metadata -->
-    <VersionPrefix>$(NugetVersion)</VersionPrefix>
-    <PackageVersion>$(NugetVersion)</PackageVersion>
-    <Copyright>Copyright (c) NuKeeper 2017-$([System.DateTime]::Now.ToString(yyyy))</Copyright>
-    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <PackageProjectUrl>https://github.com/NuKeeperDotNet/NuKeeper/</PackageProjectUrl>
-    <PackageIcon>icon.png</PackageIcon>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageTags>NuGet;Package;Update</PackageTags>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/NuKeeperDotNet/NuKeeper.git</RepositoryUrl>
-  </PropertyGroup>
-  <!-- Centralized test package versions -->
-  <PropertyGroup>
-    <NUnitVersion>3.14.0</NUnitVersion>
-    <NSubstituteVersion>5.3.0</NSubstituteVersion>
-    <TestSdkVersion>17.12.0</TestSdkVersion>
-    <CoverletVersion>6.0.2</CoverletVersion>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>warnings</Nullable>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <AnalysisLevel>10.0-recommended</AnalysisLevel>
+        <NoWarn>$(NoWarn);CS8618;CS8625;CS8603;CS8600;CS8601;CS8604;CS8602;CS8629;CS1573;CA1510;CA1860;CA1309;CA2201;CA1305;CA1725;CA1847;CA1854;CA1852;CA1859;CA1861;CA2249;CA1822;SYSLIB0051</NoWarn>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+        <!-- Package metadata -->
+        <VersionPrefix>$(NugetVersion)</VersionPrefix>
+        <PackageVersion>$(NugetVersion)</PackageVersion>
+        <Copyright>Copyright (c) NuKeeper 2017-$([System.DateTime]::Now.ToString(yyyy))</Copyright>
+        <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+        <PackageProjectUrl>https://github.com/NuKeeperDotNet/NuKeeper/</PackageProjectUrl>
+        <PackageIcon>icon.png</PackageIcon>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <PackageTags>NuGet;Package;Update</PackageTags>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/NuKeeperDotNet/NuKeeper.git</RepositoryUrl>
+    </PropertyGroup>
+    <!-- Centralized test package versions -->
+    <PropertyGroup>
+        <NUnitVersion>3.14.0</NUnitVersion>
+        <NSubstituteVersion>5.3.0</NSubstituteVersion>
+        <TestSdkVersion>17.12.0</TestSdkVersion>
+        <CoverletVersion>6.0.2</CoverletVersion>
+    </PropertyGroup>
 </Project>

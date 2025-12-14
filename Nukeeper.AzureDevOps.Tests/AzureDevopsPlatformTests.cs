@@ -1,23 +1,20 @@
-using System;
-using System.Net.Http;
-using NUnit.Framework;
 using NSubstitute;
 using NuKeeper.Abstractions.Configuration;
 using NuKeeper.Abstractions.Logging;
 using NuKeeper.AzureDevOps;
+using NUnit.Framework;
 
-namespace Nukeeper.AzureDevOps.Tests
+namespace Nukeeper.AzureDevOps.Tests;
+
+public class AzureDevOpsPlatformTests
 {
-    public class AzureDevOpsPlatformTests
+    [Test]
+    public void Initialise()
     {
-        [Test]
-        public void Initialise()
-        {
-            var httpClientFactory = Substitute.For<IHttpClientFactory>();
-            httpClientFactory.CreateClient().Returns(new HttpClient());
+        var httpClientFactory = Substitute.For<IHttpClientFactory>();
+        httpClientFactory.CreateClient().Returns(new HttpClient());
 
-            var platform = new AzureDevOpsPlatform(Substitute.For<INuKeeperLogger>(), httpClientFactory);
-            platform.Initialise(new AuthSettings(new Uri("https://uri.com"), "token"));
-        }
+        var platform = new AzureDevOpsPlatform(Substitute.For<INuKeeperLogger>(), httpClientFactory);
+        platform.Initialise(new AuthSettings(new Uri("https://uri.com"), "token"));
     }
 }

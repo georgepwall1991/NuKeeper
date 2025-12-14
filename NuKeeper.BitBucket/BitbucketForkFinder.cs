@@ -1,65 +1,58 @@
-using System;
-using System.Threading.Tasks;
 using NuKeeper.Abstractions.CollaborationModels;
 using NuKeeper.Abstractions.CollaborationPlatform;
 using NuKeeper.Abstractions.Configuration;
 using NuKeeper.Abstractions.Logging;
 
-namespace NuKeeper.BitBucket
+namespace NuKeeper.BitBucket;
+
+public class BitbucketForkFinder : IForkFinder
 {
-    public class BitbucketForkFinder : IForkFinder
+    private readonly ICollaborationPlatform _collaborationPlatform;
+    private readonly ForkMode _forkMode;
+    private readonly INuKeeperLogger _logger;
+
+    public BitbucketForkFinder(ICollaborationPlatform collaborationPlatform, INuKeeperLogger logger, ForkMode forkMode)
     {
-        private readonly ICollaborationPlatform _collaborationPlatform;
-        private readonly INuKeeperLogger _logger;
-        private readonly ForkMode _forkMode;
+        if (forkMode != ForkMode.SingleRepositoryOnly)
+            throw new ArgumentOutOfRangeException(nameof(forkMode), $"{_forkMode} has not yet been implemented");
 
-        public BitbucketForkFinder(ICollaborationPlatform collaborationPlatform, INuKeeperLogger logger, ForkMode forkMode)
+        _collaborationPlatform = collaborationPlatform;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _forkMode = forkMode;
+
+        _logger.Detailed($"FindPushFork. Fork Mode is {_forkMode}");
+    }
+
+    public async Task<ForkData> FindPushFork(string userName, ForkData fallbackFork)
+    {
+        if (fallbackFork == null) throw new ArgumentNullException(nameof(fallbackFork));
+
+        return await FindUpstreamRepoOnly(fallbackFork).ConfigureAwait(false);
+    }
+
+    private async Task<ForkData> FindUpstreamRepoOnly(ForkData pullFork)
+    {
+        // Only want to pull and push from the same origin repo.
+        var canUseOriginRepo = await IsPushableRepo(pullFork).ConfigureAwait(false);
+        if (canUseOriginRepo)
         {
-            if (forkMode != ForkMode.SingleRepositoryOnly)
-            {
-                throw new ArgumentOutOfRangeException(nameof(forkMode), $"{_forkMode} has not yet been implemented");
-            }
-
-            _collaborationPlatform = collaborationPlatform;
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _forkMode = forkMode;
-
-            _logger.Detailed($"FindPushFork. Fork Mode is {_forkMode}");
+            _logger.Normal($"Using upstream fork as push, for project {pullFork.Owner} at {pullFork.Uri}");
+            return pullFork;
         }
 
-        public async Task<ForkData> FindPushFork(string userName, ForkData fallbackFork)
-        {
-            if (fallbackFork == null)
-            {
-                throw new ArgumentNullException(nameof(fallbackFork));
-            }
+        NoPushableForkFound(pullFork.Name);
+        return null;
+    }
 
-            return await FindUpstreamRepoOnly(fallbackFork).ConfigureAwait(false);
-        }
+    private void NoPushableForkFound(string name)
+    {
+        _logger.Error($"No pushable fork found for {name} in mode {_forkMode}");
+    }
 
-        private async Task<ForkData> FindUpstreamRepoOnly(ForkData pullFork)
-        {
-            // Only want to pull and push from the same origin repo.
-            var canUseOriginRepo = await IsPushableRepo(pullFork).ConfigureAwait(false);
-            if (canUseOriginRepo)
-            {
-                _logger.Normal($"Using upstream fork as push, for project {pullFork.Owner} at {pullFork.Uri}");
-                return pullFork;
-            }
-
-            NoPushableForkFound(pullFork.Name);
-            return null;
-        }
-
-        private void NoPushableForkFound(string name)
-        {
-            _logger.Error($"No pushable fork found for {name} in mode {_forkMode}");
-        }
-
-        private async Task<bool> IsPushableRepo(ForkData originFork)
-        {
-            var originRepo = await _collaborationPlatform.GetUserRepository(originFork.Owner, originFork.Name).ConfigureAwait(false);
-            return originRepo?.UserPermissions.Push == true;
-        }
+    private async Task<bool> IsPushableRepo(ForkData originFork)
+    {
+        var originRepo = await _collaborationPlatform.GetUserRepository(originFork.Owner, originFork.Name)
+            .ConfigureAwait(false);
+        return originRepo?.UserPermissions.Push == true;
     }
 }

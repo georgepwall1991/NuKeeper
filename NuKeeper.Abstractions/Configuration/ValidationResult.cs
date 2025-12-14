@@ -1,22 +1,21 @@
-namespace NuKeeper.Abstractions.Configuration
+namespace NuKeeper.Abstractions.Configuration;
+
+public class ValidationResult
 {
-    public class ValidationResult
+    private ValidationResult(bool success, string errorMessage)
     {
-        private ValidationResult(bool success, string errorMessage)
-        {
-            IsSuccess = success;
-            ErrorMessage = errorMessage;
-        }
+        IsSuccess = success;
+        ErrorMessage = errorMessage;
+    }
 
-        public bool IsSuccess { get; }
+    public bool IsSuccess { get; }
 
-        public string ErrorMessage { get; }
+    public string ErrorMessage { get; }
 
-        public static ValidationResult Success => new ValidationResult(true, string.Empty);
+    public static ValidationResult Success => new(true, string.Empty);
 
-        public static ValidationResult Failure(string errorMessage)
-        {
-            return new ValidationResult(false, errorMessage);
-        }
+    public static ValidationResult Failure(string errorMessage)
+    {
+        return new ValidationResult(false, errorMessage);
     }
 }

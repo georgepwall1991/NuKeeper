@@ -1,7 +1,6 @@
-namespace NuKeeper.Abstractions.Configuration
+namespace NuKeeper.Abstractions.Configuration;
+
+public interface IFileSettingsReader
 {
-    public interface IFileSettingsReader
-    {
-        FileSettings Read(string folder);
-    }
+    FileSettings Read(string folder);
 }

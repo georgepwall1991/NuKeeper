@@ -1,45 +1,34 @@
-using System;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 
-namespace NuKeeper.Abstractions.NuGet
+namespace NuKeeper.Abstractions.NuGet;
+
+public class PackageVersionRange
 {
-    public class PackageVersionRange
+    public PackageVersionRange(string id, VersionRange version)
     {
-        public PackageVersionRange(string id, VersionRange version)
-        {
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                throw new ArgumentException("Should not be null or empty", nameof(id));
-            }
+        if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Should not be null or empty", nameof(id));
 
-            Id = id;
-            Version = version ?? throw new ArgumentNullException(nameof(version));
-        }
+        Id = id;
+        Version = version ?? throw new ArgumentNullException(nameof(version));
+    }
 
-        public string Id { get; }
-        public VersionRange Version { get; }
+    public string Id { get; }
+    public VersionRange Version { get; }
 
-        public static PackageVersionRange Parse(string id, string version)
-        {
-            var success = VersionRange.TryParse(version, out VersionRange versionRange);
-            if (!success)
-            {
-                return null;
-            }
+    public static PackageVersionRange Parse(string id, string version)
+    {
+        var success = VersionRange.TryParse(version, out var versionRange);
+        if (!success) return null;
 
-            return new PackageVersionRange(id, versionRange);
-        }
+        return new PackageVersionRange(id, versionRange);
+    }
 
-        public PackageIdentity SingleVersionIdentity()
-        {
-            var version = VersionRanges.SingleVersion(Version);
-            if (version == null)
-            {
-                return null;
-            }
+    public PackageIdentity SingleVersionIdentity()
+    {
+        var version = VersionRanges.SingleVersion(Version);
+        if (version == null) return null;
 
-            return new PackageIdentity(Id, version);
-        }
+        return new PackageIdentity(Id, version);
     }
 }

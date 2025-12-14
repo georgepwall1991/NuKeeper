@@ -1,11 +1,8 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using NuKeeper.Abstractions.Configuration;
 
-namespace NuKeeper.Abstractions.CollaborationPlatform
+namespace NuKeeper.Abstractions.CollaborationPlatform;
+
+public interface IRepositoryDiscovery
 {
-    public interface IRepositoryDiscovery
-    {
-        Task<IEnumerable<RepositorySettings>> GetRepositories(SourceControlServerSettings settings);
-    }
+    Task<IEnumerable<RepositorySettings>> GetRepositories(SourceControlServerSettings settings);
 }

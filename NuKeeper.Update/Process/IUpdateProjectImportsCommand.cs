@@ -1,6 +1,5 @@
-namespace NuKeeper.Update.Process
+namespace NuKeeper.Update.Process;
+
+public interface IUpdateProjectImportsCommand : IPackageCommand
 {
-    public interface IUpdateProjectImportsCommand : IPackageCommand
-    {
-    }
 }

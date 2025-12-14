@@ -1,11 +1,10 @@
-namespace NuKeeper.Abstractions.Output
+namespace NuKeeper.Abstractions.Output;
+
+public enum OutputFormat
 {
-    public enum OutputFormat
-    {
-        Off,
-        Text,
-        Csv,
-        Metrics,
-        LibYears
-    }
+    Off,
+    Text,
+    Csv,
+    Metrics,
+    LibYears
 }

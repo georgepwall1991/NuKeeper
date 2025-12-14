@@ -1,10 +1,9 @@
 using NuKeeper.Abstractions.Inspections.Files;
 using NuKeeper.Abstractions.NuGet;
 
-namespace NuKeeper.Inspection.Sources
+namespace NuKeeper.Inspection.Sources;
+
+public interface INuGetConfigFileReader
 {
-    public interface INuGetConfigFileReader
-    {
-        NuGetSources ReadNugetSources(IFolder workingFolder);
-    }
+    NuGetSources ReadNugetSources(IFolder workingFolder);
 }

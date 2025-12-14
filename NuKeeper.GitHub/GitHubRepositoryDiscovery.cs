@@ -1,94 +1,86 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.CollaborationModels;
 using NuKeeper.Abstractions.CollaborationPlatform;
 using NuKeeper.Abstractions.Configuration;
 using NuKeeper.Abstractions.Logging;
 
-namespace NuKeeper.GitHub
+namespace NuKeeper.GitHub;
+
+public class GitHubRepositoryDiscovery : IRepositoryDiscovery
 {
-    public class GitHubRepositoryDiscovery : IRepositoryDiscovery
+    private readonly ICollaborationPlatform _collaborationPlatform;
+    private readonly INuKeeperLogger _logger;
+
+    public GitHubRepositoryDiscovery(INuKeeperLogger logger, ICollaborationPlatform collaborationPlatform)
     {
-        private readonly INuKeeperLogger _logger;
-        private readonly ICollaborationPlatform _collaborationPlatform;
+        _logger = logger;
+        _collaborationPlatform = collaborationPlatform;
+    }
 
-        public GitHubRepositoryDiscovery(INuKeeperLogger logger, ICollaborationPlatform collaborationPlatform)
+    public async Task<IEnumerable<RepositorySettings>> GetRepositories(SourceControlServerSettings settings)
+    {
+        if (settings == null) throw new ArgumentNullException(nameof(settings));
+
+        switch (settings.Scope)
         {
-            _logger = logger;
-            _collaborationPlatform = collaborationPlatform;
+            case ServerScope.Global:
+                return await ForAllOrgs(settings).ConfigureAwait(false);
+
+            case ServerScope.Organisation:
+                return await FromOrganisation(settings.OrganisationName, settings).ConfigureAwait(false);
+
+            case ServerScope.Repository:
+                return new[] { settings.Repository };
+
+            default:
+                _logger.Error($"Unknown Server Scope {settings.Scope}");
+                return Enumerable.Empty<RepositorySettings>();
+        }
+    }
+
+    private async Task<IReadOnlyCollection<RepositorySettings>> ForAllOrgs(SourceControlServerSettings settings)
+    {
+        var allOrgs = await _collaborationPlatform.GetOrganizations().ConfigureAwait(false);
+
+        var allRepos = new List<RepositorySettings>();
+
+        foreach (var org in allOrgs)
+        {
+            var repos = await FromOrganisation(org.Name, settings).ConfigureAwait(false);
+            allRepos.AddRange(repos);
         }
 
-        public async Task<IEnumerable<RepositorySettings>> GetRepositories(SourceControlServerSettings settings)
-        {
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
+        return allRepos;
+    }
 
-            switch (settings.Scope)
-            {
-                case ServerScope.Global:
-                    return await ForAllOrgs(settings).ConfigureAwait(false);
+    private async Task<IReadOnlyCollection<RepositorySettings>> FromOrganisation(string organisationName,
+        SourceControlServerSettings settings)
+    {
+        var allOrgRepos = await _collaborationPlatform.GetRepositoriesForOrganisation(organisationName)
+            .ConfigureAwait(false);
 
-                case ServerScope.Organisation:
-                    return await FromOrganisation(settings.OrganisationName, settings).ConfigureAwait(false);
+        var usableRepos = allOrgRepos
+            .Where(r => MatchesIncludeExclude(r, settings))
+            .Where(RepoIsModifiable)
+            .ToList();
 
-                case ServerScope.Repository:
-                    return new[] { settings.Repository };
+        if (allOrgRepos.Count > usableRepos.Count)
+            _logger.Detailed($"Can pull from {usableRepos.Count} repos out of {allOrgRepos.Count}");
 
-                default:
-                    _logger.Error($"Unknown Server Scope {settings.Scope}");
-                    return Enumerable.Empty<RepositorySettings>();
-            }
-        }
+        return usableRepos
+            .Select(r => new RepositorySettings(r))
+            .ToList();
+    }
 
-        private async Task<IReadOnlyCollection<RepositorySettings>> ForAllOrgs(SourceControlServerSettings settings)
-        {
-            var allOrgs = await _collaborationPlatform.GetOrganizations().ConfigureAwait(false);
+    private static bool MatchesIncludeExclude(Repository repo, SourceControlServerSettings settings)
+    {
+        return RegexMatch.IncludeExclude(repo.Name, settings.IncludeRepos, settings.ExcludeRepos);
+    }
 
-            var allRepos = new List<RepositorySettings>();
-
-            foreach (var org in allOrgs)
-            {
-                var repos = await FromOrganisation(org.Name, settings).ConfigureAwait(false);
-                allRepos.AddRange(repos);
-            }
-
-            return allRepos;
-        }
-
-        private async Task<IReadOnlyCollection<RepositorySettings>> FromOrganisation(string organisationName, SourceControlServerSettings settings)
-        {
-            var allOrgRepos = await _collaborationPlatform.GetRepositoriesForOrganisation(organisationName).ConfigureAwait(false);
-
-            var usableRepos = allOrgRepos
-                .Where(r => MatchesIncludeExclude(r, settings))
-                .Where(RepoIsModifiable)
-                .ToList();
-
-            if (allOrgRepos.Count > usableRepos.Count)
-            {
-                _logger.Detailed($"Can pull from {usableRepos.Count} repos out of {allOrgRepos.Count}");
-            }
-
-            return usableRepos
-                .Select(r => new RepositorySettings(r))
-                .ToList();
-        }
-
-        private static bool MatchesIncludeExclude(Repository repo, SourceControlServerSettings settings)
-        {
-            return RegexMatch.IncludeExclude(repo.Name, settings.IncludeRepos, settings.ExcludeRepos);
-        }
-
-        private static bool RepoIsModifiable(Repository repo)
-        {
-            return
-                !repo.Archived &&
-                repo.UserPermissions.Pull;
-        }
+    private static bool RepoIsModifiable(Repository repo)
+    {
+        return
+            !repo.Archived &&
+            repo.UserPermissions.Pull;
     }
 }

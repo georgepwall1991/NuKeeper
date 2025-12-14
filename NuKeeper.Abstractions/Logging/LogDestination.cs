@@ -1,9 +1,8 @@
-namespace NuKeeper.Abstractions.Logging
+namespace NuKeeper.Abstractions.Logging;
+
+public enum LogDestination
 {
-    public enum LogDestination
-    {
-        Console,
-        File,
-        Off
-    }
+    Console,
+    File,
+    Off
 }

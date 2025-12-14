@@ -1,10 +1,8 @@
-using System.Threading.Tasks;
 using NuKeeper.Abstractions.Configuration;
 
-namespace NuKeeper.Engine
+namespace NuKeeper.Engine;
+
+public interface IRepositoryFilter
 {
-    public interface IRepositoryFilter
-    {
-        Task<bool> ContainsDotNetProjects(RepositorySettings repository);
-    }
+    Task<bool> ContainsDotNetProjects(RepositorySettings repository);
 }

@@ -1,10 +1,8 @@
-using System.Threading.Tasks;
 using NuKeeper.Abstractions.Configuration;
 
-namespace NuKeeper.Local
+namespace NuKeeper.Local;
+
+public interface ILocalEngine
 {
-    public interface ILocalEngine
-    {
-        Task Run(SettingsContainer settings, bool write);
-    }
+    Task Run(SettingsContainer settings, bool write);
 }

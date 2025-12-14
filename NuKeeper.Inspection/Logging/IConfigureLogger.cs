@@ -1,9 +1,8 @@
 using NuKeeper.Abstractions.Logging;
 
-namespace NuKeeper.Inspection.Logging
+namespace NuKeeper.Inspection.Logging;
+
+public interface IConfigureLogger
 {
-    public interface IConfigureLogger
-    {
-        void Initialise(LogLevel logLevel, LogDestination dest, string filePath);
-    }
+    void Initialise(LogLevel logLevel, LogDestination dest, string filePath);
 }

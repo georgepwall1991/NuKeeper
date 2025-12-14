@@ -1,10 +1,8 @@
-using System.Threading.Tasks;
 using NuKeeper.Abstractions.Configuration;
 
-namespace NuKeeper.Collaboration
+namespace NuKeeper.Collaboration;
+
+public interface ICollaborationEngine
 {
-    public interface ICollaborationEngine
-    {
-        Task<int> Run(SettingsContainer settings);
-    }
+    Task<int> Run(SettingsContainer settings);
 }

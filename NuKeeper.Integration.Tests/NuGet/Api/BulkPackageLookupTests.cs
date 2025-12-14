@@ -4,138 +4,133 @@ using NuKeeper.Abstractions.Configuration;
 using NuKeeper.Abstractions.NuGet;
 using NuKeeper.Inspection.NuGetApi;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace NuKeeper.Integration.Tests.NuGet.Api
+namespace NuKeeper.Integration.Tests.NuGet.Api;
+
+[TestFixture]
+public class BulkPackageLookupTests : TestWithFailureLogging
 {
-    [TestFixture]
-    public class BulkPackageLookupTests : TestWithFailureLogging
+    [Test]
+    public async Task CanFindUpdateForOneWellKnownPackage()
     {
-        [Test]
-        public async Task CanFindUpdateForOneWellKnownPackage()
+        var packages = new List<PackageIdentity> { Current("Moq") };
+
+        var lookup = BuildBulkPackageLookup();
+
+        var results = await lookup.FindVersionUpdates(
+            packages, NuGetSources.GlobalFeed, VersionChange.Major,
+            UsePrerelease.FromPrerelease);
+
+        var updatedPackages = results.Select(p => p.Key);
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(1));
+        Assert.That(updatedPackages, Has.Some.Matches<PackageIdentity>(p => p.Id == "Moq"));
+    }
+
+    [Test]
+    public async Task CanFindUpdateForTwoWellKnownPackages()
+    {
+        var packages = new List<PackageIdentity>
         {
-            var packages = new List<PackageIdentity> { Current("Moq") };
+            Current("Moq"),
+            Current("Newtonsoft.Json")
+        };
 
-            var lookup = BuildBulkPackageLookup();
+        var lookup = BuildBulkPackageLookup();
 
-            var results = await lookup.FindVersionUpdates(
-                packages, NuGetSources.GlobalFeed, VersionChange.Major,
-                UsePrerelease.FromPrerelease);
+        var results = await lookup.FindVersionUpdates(
+            packages, NuGetSources.GlobalFeed, VersionChange.Major,
+            UsePrerelease.FromPrerelease);
 
-            var updatedPackages = results.Select(p => p.Key);
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(1));
-            Assert.That(updatedPackages, Has.Some.Matches<PackageIdentity>(p => p.Id == "Moq"));
-        }
+        var updatedPackages = results.Select(p => p.Key);
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(2));
+        Assert.That(updatedPackages, Has.Some.Matches<PackageIdentity>(p => p.Id == "Moq"));
+        Assert.That(updatedPackages, Has.Some.Matches<PackageIdentity>(p => p.Id == "Newtonsoft.Json"));
+    }
 
-        [Test]
-        public async Task CanFindUpdateForTwoWellKnownPackages()
+    [Test]
+    public async Task FindsSingleUpdateForPackageDifferingOnlyByCase()
+    {
+        var packages = new List<PackageIdentity>
         {
-            var packages = new List<PackageIdentity>
-            {
-                Current("Moq"),
-                Current("Newtonsoft.Json")
-            };
+            Current("nunit"),
+            Current("NUnit")
+        };
 
-            var lookup = BuildBulkPackageLookup();
+        var lookup = BuildBulkPackageLookup();
 
-            var results = await lookup.FindVersionUpdates(
-                packages, NuGetSources.GlobalFeed, VersionChange.Major,
-                UsePrerelease.FromPrerelease);
+        var results = await lookup.FindVersionUpdates(
+            packages, NuGetSources.GlobalFeed, VersionChange.Major,
+            UsePrerelease.FromPrerelease);
 
-            var updatedPackages = results.Select(p => p.Key);
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(2));
-            Assert.That(updatedPackages, Has.Some.Matches<PackageIdentity>(p => p.Id == "Moq"));
-            Assert.That(updatedPackages, Has.Some.Matches<PackageIdentity>(p => p.Id == "Newtonsoft.Json"));
-        }
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(1));
+    }
 
-        [Test]
-        public async Task FindsSingleUpdateForPackageDifferingOnlyByCase()
+    [Test]
+    public async Task InvalidPackageIsIgnored()
+    {
+        var packages = new List<PackageIdentity>
         {
-            var packages = new List<PackageIdentity>
-            {
-                Current("nunit"),
-                Current("NUnit")
-            };
+            Current(Guid.NewGuid().ToString())
+        };
 
-            var lookup = BuildBulkPackageLookup();
+        var lookup = BuildBulkPackageLookup();
 
-            var results = await lookup.FindVersionUpdates(
-                packages, NuGetSources.GlobalFeed, VersionChange.Major,
-                UsePrerelease.FromPrerelease);
+        var results = await lookup.FindVersionUpdates(
+            packages, NuGetSources.GlobalFeed, VersionChange.Major,
+            UsePrerelease.FromPrerelease);
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(1));
-        }
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results, Is.Empty);
+    }
 
-        [Test]
-        public async Task InvalidPackageIsIgnored()
+    [Test]
+    public async Task TestEmptyList()
+    {
+        var lookup = BuildBulkPackageLookup();
+
+        var results = await lookup.FindVersionUpdates(
+            Enumerable.Empty<PackageIdentity>(), NuGetSources.GlobalFeed, VersionChange.Major,
+            UsePrerelease.FromPrerelease);
+
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results, Is.Empty);
+    }
+
+    [Test]
+    public async Task ValidPackagesWorkDespiteInvalidPackages()
+    {
+        var packages = new List<PackageIdentity>
         {
-            var packages = new List<PackageIdentity>
-            {
-                Current(Guid.NewGuid().ToString())
-            };
+            Current("Moq"),
+            Current(Guid.NewGuid().ToString()),
+            Current("Newtonsoft.Json"),
+            Current(Guid.NewGuid().ToString())
+        };
 
-            var lookup = BuildBulkPackageLookup();
+        var lookup = BuildBulkPackageLookup();
 
-            var results = await lookup.FindVersionUpdates(
-                packages, NuGetSources.GlobalFeed, VersionChange.Major,
-                UsePrerelease.FromPrerelease);
+        var results = await lookup.FindVersionUpdates(
+            packages, NuGetSources.GlobalFeed, VersionChange.Major,
+            UsePrerelease.FromPrerelease);
 
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results, Is.Empty);
-        }
+        var updatedPackages = results.Select(p => p.Key);
+        Assert.That(results, Is.Not.Null);
+        Assert.That(results.Count, Is.EqualTo(2));
+        Assert.That(updatedPackages, Has.Some.Matches<PackageIdentity>(p => p.Id == "Moq"));
+        Assert.That(updatedPackages, Has.Some.Matches<PackageIdentity>(p => p.Id == "Newtonsoft.Json"));
+    }
 
-        [Test]
-        public async Task TestEmptyList()
-        {
-            var lookup = BuildBulkPackageLookup();
+    private BulkPackageLookup BuildBulkPackageLookup()
+    {
+        var lookup = new ApiPackageLookup(new PackageVersionsLookup(NugetLogger, NukeeperLogger));
+        return new BulkPackageLookup(lookup, new PackageLookupResultReporter(NukeeperLogger));
+    }
 
-            var results = await lookup.FindVersionUpdates(
-                Enumerable.Empty<PackageIdentity>(), NuGetSources.GlobalFeed, VersionChange.Major,
-                UsePrerelease.FromPrerelease);
-
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results, Is.Empty);
-        }
-
-        [Test]
-        public async Task ValidPackagesWorkDespiteInvalidPackages()
-        {
-            var packages = new List<PackageIdentity>
-            {
-                Current("Moq"),
-                Current(Guid.NewGuid().ToString()),
-                Current("Newtonsoft.Json"),
-                Current(Guid.NewGuid().ToString())
-            };
-
-            var lookup = BuildBulkPackageLookup();
-
-            var results = await lookup.FindVersionUpdates(
-                packages, NuGetSources.GlobalFeed, VersionChange.Major,
-                UsePrerelease.FromPrerelease);
-
-            var updatedPackages = results.Select(p => p.Key);
-            Assert.That(results, Is.Not.Null);
-            Assert.That(results.Count, Is.EqualTo(2));
-            Assert.That(updatedPackages, Has.Some.Matches<PackageIdentity>(p => p.Id == "Moq"));
-            Assert.That(updatedPackages, Has.Some.Matches<PackageIdentity>(p => p.Id == "Newtonsoft.Json"));
-        }
-
-        private BulkPackageLookup BuildBulkPackageLookup()
-        {
-            var lookup = new ApiPackageLookup(new PackageVersionsLookup(NugetLogger, NukeeperLogger));
-            return new BulkPackageLookup(lookup, new PackageLookupResultReporter(NukeeperLogger));
-        }
-
-        private static PackageIdentity Current(string packageId)
-        {
-            return new PackageIdentity(packageId, new NuGetVersion(1, 2, 3));
-        }
+    private static PackageIdentity Current(string packageId)
+    {
+        return new PackageIdentity(packageId, new NuGetVersion(1, 2, 3));
     }
 }

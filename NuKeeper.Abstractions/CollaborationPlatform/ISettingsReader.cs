@@ -1,17 +1,14 @@
-using System;
-using System.Threading.Tasks;
 using NuKeeper.Abstractions.Configuration;
 
-namespace NuKeeper.Abstractions.CollaborationPlatform
+namespace NuKeeper.Abstractions.CollaborationPlatform;
+
+public interface ISettingsReader
 {
-    public interface ISettingsReader
-    {
-        Platform Platform { get; }
+    Platform Platform { get; }
 
-        Task<bool> CanRead(Uri repositoryUri);
+    Task<bool> CanRead(Uri repositoryUri);
 
-        Task<RepositorySettings> RepositorySettings(Uri repositoryUri, bool setAutoMerge, string targetBranch = null);
+    Task<RepositorySettings> RepositorySettings(Uri repositoryUri, bool setAutoMerge, string targetBranch = null);
 
-        void UpdateCollaborationPlatformSettings(CollaborationPlatformSettings settings);
-    }
+    void UpdateCollaborationPlatformSettings(CollaborationPlatformSettings settings);
 }

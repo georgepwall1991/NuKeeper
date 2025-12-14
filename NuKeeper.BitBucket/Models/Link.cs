@@ -1,8 +1,7 @@
-﻿namespace NuKeeper.BitBucket.Models
+﻿namespace NuKeeper.BitBucket.Models;
+
+public class Link
 {
-    public class Link
-    {
-        public string href { get; set; }
-        public string name { get; set; }
-    }
+    public string href { get; set; }
+    public string name { get; set; }
 }

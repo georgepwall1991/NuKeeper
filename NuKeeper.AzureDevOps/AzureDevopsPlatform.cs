@@ -3,269 +3,232 @@ using NuKeeper.Abstractions.CollaborationModels;
 using NuKeeper.Abstractions.CollaborationPlatform;
 using NuKeeper.Abstractions.Configuration;
 using NuKeeper.Abstractions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 
-namespace NuKeeper.AzureDevOps
+namespace NuKeeper.AzureDevOps;
+
+public class AzureDevOpsPlatform : ICollaborationPlatform
 {
-    public class AzureDevOpsPlatform : ICollaborationPlatform
+    private readonly IHttpClientFactory _clientFactory;
+    private readonly INuKeeperLogger _logger;
+    private AzureDevOpsRestClient _client;
+
+    public AzureDevOpsPlatform(INuKeeperLogger logger, IHttpClientFactory clientFactory)
     {
-        private readonly INuKeeperLogger _logger;
-        private readonly IHttpClientFactory _clientFactory;
-        private AzureDevOpsRestClient _client;
+        _logger = logger;
+        _clientFactory = clientFactory;
+    }
 
-        public AzureDevOpsPlatform(INuKeeperLogger logger, IHttpClientFactory clientFactory)
+    public void Initialise(AuthSettings settings)
+    {
+        if (settings == null) throw new ArgumentNullException(nameof(settings));
+
+        _client = new AzureDevOpsRestClient(_clientFactory, _logger, settings.Token, settings.ApiBase);
+    }
+
+    public async Task<User> GetCurrentUser()
+    {
+        try
         {
-            _logger = logger;
-            _clientFactory = clientFactory;
-        }
+            var currentAccounts = await _client.GetCurrentUser().ConfigureAwait(false);
+            var account = currentAccounts.value.FirstOrDefault();
 
-        public void Initialise(AuthSettings settings)
-        {
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
-
-            _client = new AzureDevOpsRestClient(_clientFactory, _logger, settings.Token, settings.ApiBase);
-        }
-
-        public async Task<User> GetCurrentUser()
-        {
-            try
-            {
-                var currentAccounts = await _client.GetCurrentUser().ConfigureAwait(false);
-                var account = currentAccounts.value.FirstOrDefault();
-
-                if (account == null)
-                    return User.Default;
-
-                return new User(account.accountId, account.accountName, account.Mail);
-
-            }
-            catch (NuKeeperException)
-            {
+            if (account == null)
                 return User.Default;
-            }
+
+            return new User(account.accountId, account.accountName, account.Mail);
         }
-
-        public async Task<User> GetUserByMail(string email)
+        catch (NuKeeperException)
         {
-            try
-            {
-                var currentAccounts = await _client.GetUserByMail(email).ConfigureAwait(false);
-                var account = currentAccounts.value.FirstOrDefault();
-
-                if (account == null)
-                    return User.Default;
-
-                return new User(account.accountId, account.accountName, account.Mail);
-
-            }
-            catch (NuKeeperException)
-            {
-                return User.Default;
-            }
+            return User.Default;
         }
+    }
 
-        public async Task<bool> PullRequestExists(ForkData target, string headBranch, string baseBranch)
+    public async Task<bool> PullRequestExists(ForkData target, string headBranch, string baseBranch)
+    {
+        if (target == null) throw new ArgumentNullException(nameof(target));
+
+        var repos = await _client.GetGitRepositories(target.Owner).ConfigureAwait(false);
+        var repo = repos.Single(x => x.name.Equals(target.Name, StringComparison.OrdinalIgnoreCase));
+
+        var result = await _client.GetPullRequests(
+            target.Owner,
+            repo.id,
+            $"refs/heads/{headBranch}",
+            $"refs/heads/{baseBranch}");
+
+        return result.Any();
+    }
+
+    public async Task OpenPullRequest(ForkData target, PullRequestRequest request, IEnumerable<string> labels)
+    {
+        if (target == null) throw new ArgumentNullException(nameof(target));
+
+        if (labels == null) throw new ArgumentNullException(nameof(labels));
+
+        if (request == null) throw new ArgumentNullException(nameof(request));
+
+        var repos = await _client.GetGitRepositories(target.Owner).ConfigureAwait(false);
+        var repo = repos.Single(x => x.name.Equals(target.Name, StringComparison.OrdinalIgnoreCase));
+
+        var req = new PRRequest
         {
-            if (target == null)
+            title = request.Title,
+            sourceRefName = $"refs/heads/{request.Head}",
+            description = request.Body,
+            targetRefName = $"refs/heads/{request.BaseRef}",
+            completionOptions = new GitPullRequestCompletionOptions
             {
-                throw new ArgumentNullException(nameof(target));
+                deleteSourceBranch = request.DeleteBranchAfterMerge
             }
+        };
 
-            var repos = await _client.GetGitRepositories(target.Owner).ConfigureAwait(false);
-            var repo = repos.Single(x => x.name.Equals(target.Name, StringComparison.OrdinalIgnoreCase));
+        var pullRequest = await _client.CreatePullRequest(req, target.Owner, repo.id).ConfigureAwait(false);
 
-            var result = await _client.GetPullRequests(
-                target.Owner,
-                repo.id,
-                $"refs/heads/{headBranch}",
-                $"refs/heads/{baseBranch}");
-
-            return result.Any();
-        }
-
-        public async Task OpenPullRequest(ForkData target, PullRequestRequest request, IEnumerable<string> labels)
-        {
-            if (target == null)
-            {
-                throw new ArgumentNullException(nameof(target));
-            }
-
-            if (labels == null)
-            {
-                throw new ArgumentNullException(nameof(labels));
-            }
-
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            var repos = await _client.GetGitRepositories(target.Owner).ConfigureAwait(false);
-            var repo = repos.Single(x => x.name.Equals(target.Name, StringComparison.OrdinalIgnoreCase));
-
-            var req = new PRRequest
-            {
-                title = request.Title,
-                sourceRefName = $"refs/heads/{request.Head}",
-                description = request.Body,
-                targetRefName = $"refs/heads/{request.BaseRef}",
-                completionOptions = new GitPullRequestCompletionOptions
+        if (request.SetAutoMerge)
+            await _client.SetAutoComplete(new PRRequest
                 {
-                    deleteSourceBranch = request.DeleteBranchAfterMerge
-                }
-            };
-
-            var pullRequest = await _client.CreatePullRequest(req, target.Owner, repo.id).ConfigureAwait(false);
-
-            if (request.SetAutoMerge)
-            {
-                await _client.SetAutoComplete(new PRRequest()
+                    autoCompleteSetBy = new Creator
                     {
-                        autoCompleteSetBy = new Creator()
-                        {
-                            id = pullRequest.CreatedBy.id
-                        }
-                    }, target.Owner,
-                    repo.id,
-                    pullRequest.PullRequestId);
-            }
+                        id = pullRequest.CreatedBy.id
+                    }
+                }, target.Owner,
+                repo.id,
+                pullRequest.PullRequestId);
 
-            foreach (var label in labels)
-            {
-                await _client.CreatePullRequestLabel(new LabelRequest { name = label }, target.Owner, repo.id, pullRequest.PullRequestId).ConfigureAwait(false);
-            }
+        foreach (var label in labels)
+            await _client
+                .CreatePullRequestLabel(new LabelRequest { name = label }, target.Owner, repo.id,
+                    pullRequest.PullRequestId).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<Organization>> GetOrganizations()
+    {
+        var projects = await _client.GetProjects().ConfigureAwait(false);
+        return projects
+            .Select(project => new Organization(project.name))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<Repository>> GetRepositoriesForOrganisation(string projectName)
+    {
+        var repos = await _client.GetGitRepositories(projectName).ConfigureAwait(false);
+        return repos.Select(x =>
+                new Repository(x.name, false,
+                    new UserPermissions(true, true, true),
+                    new Uri(x.remoteUrl),
+                    null, false, null))
+            .ToList();
+    }
+
+    public async Task<Repository> GetUserRepository(string projectName, string repositoryName)
+    {
+        var repos = await GetRepositoriesForOrganisation(projectName).ConfigureAwait(false);
+        return repos.Single(x => x.Name.Equals(repositoryName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public Task<Repository> MakeUserFork(string owner, string repositoryName)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<bool> RepositoryBranchExists(string projectName, string repositoryName, string branchName)
+    {
+        var repos = await _client.GetGitRepositories(projectName).ConfigureAwait(false);
+        var repo = repos.Single(x => x.name.Equals(repositoryName, StringComparison.OrdinalIgnoreCase));
+        var refs = await _client.GetRepositoryRefs(projectName, repo.id).ConfigureAwait(false);
+        var count = refs.Count(x => x.name.EndsWith(branchName, StringComparison.OrdinalIgnoreCase));
+        if (count > 0)
+        {
+            _logger.Detailed($"Branch found for {projectName} / {repositoryName} / {branchName}");
+            return true;
         }
 
-        public async Task<IReadOnlyList<Organization>> GetOrganizations()
+        _logger.Detailed($"No branch found for {projectName} / {repositoryName} / {branchName}");
+        return false;
+    }
+
+    public async Task<SearchCodeResult> Search(SearchCodeRequest searchRequest)
+    {
+        if (searchRequest == null) throw new ArgumentNullException(nameof(searchRequest));
+
+        var totalCount = 0;
+        var repositoryFileNames = new List<string>();
+        foreach (var repo in searchRequest.Repos)
+            repositoryFileNames.AddRange(await _client.GetGitRepositoryFileNames(repo.Owner, repo.Name));
+
+        var searchStrings = searchRequest.Term
+            .Replace("\"", string.Empty)
+            .Split(new[] { "OR" }, StringSplitOptions.None);
+
+        foreach (var searchString in searchStrings)
+            totalCount += repositoryFileNames
+                .FindAll(x => x.EndsWith(searchString.Trim(), StringComparison.InvariantCultureIgnoreCase)).Count;
+
+        return new SearchCodeResult(totalCount);
+    }
+
+    public async Task<int> GetNumberOfOpenPullRequests(string projectName, string repositoryName)
+    {
+        var user = await GetCurrentUser().ConfigureAwait(false);
+
+        if (user == User.Default)
+            // TODO: allow this to be configurable
+            user = await GetUserByMail("bot@nukeeper.com").ConfigureAwait(false);
+
+        var prs = await GetPullRequestsForUser(
+            projectName,
+            repositoryName,
+            user == User.Default
+                ? string.Empty
+                : user.Login
+        );
+
+        if (user == User.Default)
         {
-            var projects = await _client.GetProjects().ConfigureAwait(false);
-            return projects
-                .Select(project => new Organization(project.name))
-                .ToList();
+            var relevantPrs = prs?
+                .Where(pr => pr.labels
+                    ?.FirstOrDefault(l => l.name.Equals(
+                            "nukeeper",
+                            StringComparison.InvariantCultureIgnoreCase
+                        )
+                    )?.active ?? false
+                );
+
+            return relevantPrs?.Count() ?? 0;
         }
 
-        public async Task<IReadOnlyList<Repository>> GetRepositoriesForOrganisation(string projectName)
+        return prs?.Count() ?? 0;
+    }
+
+    public async Task<User> GetUserByMail(string email)
+    {
+        try
         {
-            var repos = await _client.GetGitRepositories(projectName).ConfigureAwait(false);
-            return repos.Select(x =>
-                    new Repository(x.name, false,
-                        new UserPermissions(true, true, true),
-                        new Uri(x.remoteUrl),
-                        null, false, null))
-                .ToList();
+            var currentAccounts = await _client.GetUserByMail(email).ConfigureAwait(false);
+            var account = currentAccounts.value.FirstOrDefault();
+
+            if (account == null)
+                return User.Default;
+
+            return new User(account.accountId, account.accountName, account.Mail);
         }
-
-        public async Task<Repository> GetUserRepository(string projectName, string repositoryName)
+        catch (NuKeeperException)
         {
-            var repos = await GetRepositoriesForOrganisation(projectName).ConfigureAwait(false);
-            return repos.Single(x => x.Name.Equals(repositoryName, StringComparison.OrdinalIgnoreCase));
+            return User.Default;
         }
+    }
 
-        public Task<Repository> MakeUserFork(string owner, string repositoryName)
+    private async Task<IEnumerable<PullRequest>> GetPullRequestsForUser(string projectName, string repositoryName,
+        string userName)
+    {
+        try
         {
-            throw new NotImplementedException();
+            return await _client.GetPullRequests(projectName, repositoryName, userName).ConfigureAwait(false);
         }
-
-        public async Task<bool> RepositoryBranchExists(string projectName, string repositoryName, string branchName)
+        catch (NuKeeperException ex)
         {
-            var repos = await _client.GetGitRepositories(projectName).ConfigureAwait(false);
-            var repo = repos.Single(x => x.name.Equals(repositoryName, StringComparison.OrdinalIgnoreCase));
-            var refs = await _client.GetRepositoryRefs(projectName, repo.id).ConfigureAwait(false);
-            var count = refs.Count(x => x.name.EndsWith(branchName, StringComparison.OrdinalIgnoreCase));
-            if (count > 0)
-            {
-                _logger.Detailed($"Branch found for {projectName} / {repositoryName} / {branchName}");
-                return true;
-            }
-
-            _logger.Detailed($"No branch found for {projectName} / {repositoryName} / {branchName}");
-            return false;
-        }
-
-        public async Task<SearchCodeResult> Search(SearchCodeRequest searchRequest)
-        {
-            if (searchRequest == null)
-            {
-                throw new ArgumentNullException(nameof(searchRequest));
-            }
-
-            var totalCount = 0;
-            var repositoryFileNames = new List<string>();
-            foreach (var repo in searchRequest.Repos)
-            {
-                repositoryFileNames.AddRange(await _client.GetGitRepositoryFileNames(repo.Owner, repo.Name));
-            }
-
-            var searchStrings = searchRequest.Term
-                .Replace("\"", string.Empty)
-                .Split(new[] { "OR" }, StringSplitOptions.None);
-
-            foreach (var searchString in searchStrings)
-            {
-                totalCount += repositoryFileNames.FindAll(x => x.EndsWith(searchString.Trim(), StringComparison.InvariantCultureIgnoreCase)).Count;
-            }
-
-            return new SearchCodeResult(totalCount);
-        }
-
-        public async Task<int> GetNumberOfOpenPullRequests(string projectName, string repositoryName)
-        {
-            var user = await GetCurrentUser().ConfigureAwait(false);
-
-            if (user == User.Default)
-            {
-                // TODO: allow this to be configurable
-                user = await GetUserByMail("bot@nukeeper.com").ConfigureAwait(false);
-            }
-
-            var prs = await GetPullRequestsForUser(
-                projectName,
-                repositoryName,
-                user == User.Default ?
-                    string.Empty
-                    : user.Login
-            );
-
-            if (user == User.Default)
-            {
-                var relevantPrs = prs?
-                    .Where(
-                        pr => pr.labels
-                            ?.FirstOrDefault(
-                                l => l.name.Equals(
-                                    "nukeeper",
-                                    StringComparison.InvariantCultureIgnoreCase
-                                )
-                            )?.active ?? false
-                    );
-
-                return relevantPrs?.Count() ?? 0;
-            }
-            else
-            {
-                return prs?.Count() ?? 0;
-            }
-        }
-
-        private async Task<IEnumerable<PullRequest>> GetPullRequestsForUser(string projectName, string repositoryName, string userName)
-        {
-            try
-            {
-                return await _client.GetPullRequests(projectName, repositoryName, userName).ConfigureAwait(false);
-
-            }
-            catch (NuKeeperException ex)
-            {
-                _logger.Error($"Failed to get pull requests for name {userName}", ex);
-                return Enumerable.Empty<PullRequest>();
-            }
+            _logger.Error($"Failed to get pull requests for name {userName}", ex);
+            return Enumerable.Empty<PullRequest>();
         }
     }
 }

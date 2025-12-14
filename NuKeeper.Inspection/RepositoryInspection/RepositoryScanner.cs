@@ -1,65 +1,60 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using NuKeeper.Abstractions.Inspections.Files;
 using NuKeeper.Abstractions.RepositoryInspection;
 
-namespace NuKeeper.Inspection.RepositoryInspection
+namespace NuKeeper.Inspection.RepositoryInspection;
+
+public class RepositoryScanner : IRepositoryScanner
 {
-    public class RepositoryScanner : IRepositoryScanner
+    private readonly IDirectoryExclusions _directoryExclusions;
+    private readonly IReadOnlyCollection<IPackageReferenceFinder> _finders;
+
+    public RepositoryScanner(
+        ProjectFileReader projectFileReader,
+        PackagesFileReader packagesFileReader,
+        NuspecFileReader nuspecFileReader,
+        DirectoryBuildTargetsReader directoryBuildTargetsReader,
+        IDirectoryExclusions directoryExclusions)
     {
-        private readonly IReadOnlyCollection<IPackageReferenceFinder> _finders;
-        private readonly IDirectoryExclusions _directoryExclusions;
-
-        public RepositoryScanner(
-            ProjectFileReader projectFileReader,
-            PackagesFileReader packagesFileReader,
-            NuspecFileReader nuspecFileReader,
-            DirectoryBuildTargetsReader directoryBuildTargetsReader,
-            IDirectoryExclusions directoryExclusions)
+        _finders = new IPackageReferenceFinder[]
         {
-            _finders = new IPackageReferenceFinder[]
-            {
-                projectFileReader, packagesFileReader, nuspecFileReader, directoryBuildTargetsReader
-            };
+            projectFileReader, packagesFileReader, nuspecFileReader, directoryBuildTargetsReader
+        };
 
-            _directoryExclusions = directoryExclusions;
-        }
+        _directoryExclusions = directoryExclusions;
+    }
 
-        public IReadOnlyCollection<PackageInProject> FindAllNuGetPackages(IFolder workingFolder)
-        {
-            return _finders
-                .SelectMany(f => FindPackages(workingFolder, f))
-                .ToList();
-        }
+    public IReadOnlyCollection<PackageInProject> FindAllNuGetPackages(IFolder workingFolder)
+    {
+        return _finders
+            .SelectMany(f => FindPackages(workingFolder, f))
+            .ToList();
+    }
 
-        private IEnumerable<PackageInProject> FindPackages(IFolder workingFolder,
-            IPackageReferenceFinder packageReferenceFinder)
-        {
-            var files = packageReferenceFinder
-                .GetFilePatterns()
-                .SelectMany(workingFolder.Find);
+    private IEnumerable<PackageInProject> FindPackages(IFolder workingFolder,
+        IPackageReferenceFinder packageReferenceFinder)
+    {
+        var files = packageReferenceFinder
+            .GetFilePatterns()
+            .SelectMany(workingFolder.Find);
 
-            var filesInUsableDirectories =
-                files.Where(f => !_directoryExclusions.PathIsExcluded(f.FullName));
+        var filesInUsableDirectories =
+            files.Where(f => !_directoryExclusions.PathIsExcluded(f.FullName));
 
-            return filesInUsableDirectories.SelectMany(f =>
-                packageReferenceFinder.ReadFile(
+        return filesInUsableDirectories.SelectMany(f =>
+            packageReferenceFinder.ReadFile(
+                workingFolder.FullPath,
+                GetRelativeFileName(
                     workingFolder.FullPath,
-                    GetRelativeFileName(
-                        workingFolder.FullPath,
-                        f.FullName)));
-        }
+                    f.FullName)));
+    }
 
-        private static string GetRelativeFileName(string rootDir, string fileName)
-        {
-            var separatorChar = Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture);
-            var rootDirWithSeparator = rootDir.EndsWith(separatorChar, StringComparison.OrdinalIgnoreCase)
-                ? rootDir
-                : rootDir + Path.DirectorySeparatorChar;
-            return fileName.Replace(rootDirWithSeparator, string.Empty);
-        }
+    private static string GetRelativeFileName(string rootDir, string fileName)
+    {
+        var separatorChar = Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture);
+        var rootDirWithSeparator = rootDir.EndsWith(separatorChar, StringComparison.OrdinalIgnoreCase)
+            ? rootDir
+            : rootDir + Path.DirectorySeparatorChar;
+        return fileName.Replace(rootDirWithSeparator, string.Empty);
     }
 }

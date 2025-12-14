@@ -1,9 +1,6 @@
-using System.Threading.Tasks;
+namespace NuKeeper.Update.ProcessRunner;
 
-namespace NuKeeper.Update.ProcessRunner
+public interface IExternalProcess
 {
-    public interface IExternalProcess
-    {
-        Task<ProcessOutput> Run(string workingDirectory, string command, string arguments, bool ensureSuccess);
-    }
+    Task<ProcessOutput> Run(string workingDirectory, string command, string arguments, bool ensureSuccess);
 }

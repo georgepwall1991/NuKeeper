@@ -1,37 +1,22 @@
-using System;
+namespace NuKeeper.GitHub;
 
-namespace NuKeeper.GitHub
+public static class GithubUriHelpers
 {
-    public static class GithubUriHelpers
+    public static Uri Normalise(Uri value)
     {
-        public static Uri Normalise(Uri value)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+        if (value == null) throw new ArgumentNullException(nameof(value));
 
-            return Normalise(value.ToString());
-        }
+        return Normalise(value.ToString());
+    }
 
-        public static Uri Normalise(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return null;
-            }
+    public static Uri Normalise(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
 
-            if (value.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
-            {
-                value = value.Substring(0, value.Length - 4);
-            }
+        if (value.EndsWith(".git", StringComparison.OrdinalIgnoreCase)) value = value.Substring(0, value.Length - 4);
 
-            if (value.EndsWith("/", StringComparison.OrdinalIgnoreCase))
-            {
-                value = value.Substring(0, value.Length - 1);
-            }
+        if (value.EndsWith("/", StringComparison.OrdinalIgnoreCase)) value = value.Substring(0, value.Length - 1);
 
-            return new Uri(value, UriKind.Absolute);
-        }
+        return new Uri(value, UriKind.Absolute);
     }
 }

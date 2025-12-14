@@ -2,134 +2,127 @@ using NuKeeper.Abstractions.NuGet;
 using NuKeeper.Abstractions.NuGetApi;
 using NuKeeper.Inspection.NuGetApi;
 using NUnit.Framework;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace NuKeeper.Integration.Tests.Nuget.Api
+namespace NuKeeper.Integration.Tests.Nuget.Api;
+
+[TestFixture]
+public class PackageVersionsLookupTests : TestWithFailureLogging
 {
-    [TestFixture]
-    public class PackageVersionsLookupTests : TestWithFailureLogging
+    [Test]
+    public async Task WellKnownPackageName_ShouldReturnResultsList()
     {
-        [Test]
-        public async Task WellKnownPackageName_ShouldReturnResultsList()
+        var lookup = BuildPackageLookup();
+
+        var packages = await lookup.Lookup("Newtonsoft.Json", false, NuGetSources.GlobalFeed);
+
+        Assert.That(packages, Is.Not.Null);
+
+        var packageList = packages.ToList();
+        Assert.That(packageList, Is.Not.Empty);
+        Assert.That(packageList.Count, Is.GreaterThan(1));
+    }
+
+    [Test]
+    public async Task WellKnownPackageName_ShouldReturnPopulatedResults()
+    {
+        var lookup = BuildPackageLookup();
+
+        var packages = await lookup.Lookup("Newtonsoft.Json", false, NuGetSources.GlobalFeed);
+
+        Assert.That(packages, Is.Not.Null);
+
+        var packageList = packages.ToList();
+        var latest = packageList
+            .OrderByDescending(p => p.Identity.Version)
+            .FirstOrDefault();
+
+        Assert.That(latest, Is.Not.Null);
+        Assert.That(latest.Identity, Is.Not.Null);
+        Assert.That(latest.Identity.Version, Is.Not.Null);
+
+        Assert.That(latest.Identity.Id, Is.EqualTo("Newtonsoft.Json"));
+        Assert.That(latest.Identity.Version.Major, Is.GreaterThan(1));
+        Assert.That(latest.Published.HasValue, Is.True);
+        Assert.That(latest.Identity.Version.IsPrerelease, Is.False);
+    }
+
+    [Test]
+    public async Task CanGetPreReleases()
+    {
+        var lookup = BuildPackageLookup();
+
+        var packages = await lookup.Lookup("Moq", true, NuGetSources.GlobalFeed);
+
+        Assert.That(packages, Is.Not.Null);
+
+        var betas = packages
+            .Where(p => p.Identity.Version.IsPrerelease)
+            .OrderByDescending(p => p.Identity.Version)
+            .ToList();
+
+        Assert.That(betas, Is.Not.Null);
+        Assert.That(betas, Is.Not.Empty);
+
+        var beta = betas.FirstOrDefault();
+
+        Assert.That(beta, Is.Not.Null);
+        Assert.That(beta.Identity, Is.Not.Null);
+        Assert.That(beta.Identity.Version, Is.Not.Null);
+
+        Assert.That(beta.Identity.Id, Is.EqualTo("Moq"));
+        Assert.That(beta.Identity.Version.IsPrerelease, Is.True);
+    }
+
+    [Test]
+    public async Task PackageShouldHaveDependencies()
+    {
+        var lookup = BuildPackageLookup();
+
+        var packages = await lookup.Lookup("Moq", false, NuGetSources.GlobalFeed);
+
+        Assert.That(packages, Is.Not.Null);
+
+        var packageList = packages.ToList();
+        var latest = packageList
+            .OrderByDescending(p => p.Identity.Version)
+            .FirstOrDefault();
+
+        Assert.That(latest, Is.Not.Null);
+        Assert.That(latest.Dependencies, Is.Not.Null);
+        Assert.That(latest.Dependencies, Is.Not.Empty);
+    }
+
+    [Test]
+    public async Task CanBeCalledTwice()
+    {
+        var lookup = BuildPackageLookup();
+        var packages1 = await lookup.Lookup("Newtonsoft.Json", false, NuGetSources.GlobalFeed);
+        Assert.That(packages1, Is.Not.Null);
+
+        var packages2 = await lookup.Lookup("Moq", false, NuGetSources.GlobalFeed);
+        Assert.That(packages2, Is.Not.Null);
+    }
+
+    [Test]
+    public async Task CanBeCalledInParallel()
+    {
+        var lookup = BuildPackageLookup();
+
+        var tasks = new List<Task<IReadOnlyCollection<PackageSearchMetadata>>>();
+
+        for (var i = 0; i < 10; i++)
         {
-            var lookup = BuildPackageLookup();
-
-            var packages = await lookup.Lookup("Newtonsoft.Json", false, NuGetSources.GlobalFeed);
-
-            Assert.That(packages, Is.Not.Null);
-
-            var packageList = packages.ToList();
-            Assert.That(packageList, Is.Not.Empty);
-            Assert.That(packageList.Count, Is.GreaterThan(1));
+            var task = lookup.Lookup("Newtonsoft.Json", false, NuGetSources.GlobalFeed);
+            tasks.Add(task);
         }
 
-        [Test]
-        public async Task WellKnownPackageName_ShouldReturnPopulatedResults()
-        {
-            var lookup = BuildPackageLookup();
+        await Task.WhenAll(tasks);
 
-            var packages = await lookup.Lookup("Newtonsoft.Json", false, NuGetSources.GlobalFeed);
+        foreach (var task in tasks) Assert.That(task.IsCompletedSuccessfully);
+    }
 
-            Assert.That(packages, Is.Not.Null);
-
-            var packageList = packages.ToList();
-            var latest = packageList
-                .OrderByDescending(p => p.Identity.Version)
-                .FirstOrDefault();
-
-            Assert.That(latest, Is.Not.Null);
-            Assert.That(latest.Identity, Is.Not.Null);
-            Assert.That(latest.Identity.Version, Is.Not.Null);
-
-            Assert.That(latest.Identity.Id, Is.EqualTo("Newtonsoft.Json"));
-            Assert.That(latest.Identity.Version.Major, Is.GreaterThan(1));
-            Assert.That(latest.Published.HasValue, Is.True);
-            Assert.That(latest.Identity.Version.IsPrerelease, Is.False);
-        }
-
-        [Test]
-        public async Task CanGetPreReleases()
-        {
-            var lookup = BuildPackageLookup();
-
-            var packages = await lookup.Lookup("Moq", true, NuGetSources.GlobalFeed);
-
-            Assert.That(packages, Is.Not.Null);
-
-            var betas = packages
-                .Where(p => p.Identity.Version.IsPrerelease)
-                .OrderByDescending(p => p.Identity.Version)
-                .ToList();
-
-            Assert.That(betas, Is.Not.Null);
-            Assert.That(betas, Is.Not.Empty);
-
-            var beta = betas.FirstOrDefault();
-
-            Assert.That(beta, Is.Not.Null);
-            Assert.That(beta.Identity, Is.Not.Null);
-            Assert.That(beta.Identity.Version, Is.Not.Null);
-
-            Assert.That(beta.Identity.Id, Is.EqualTo("Moq"));
-            Assert.That(beta.Identity.Version.IsPrerelease, Is.True);
-        }
-
-        [Test]
-        public async Task PackageShouldHaveDependencies()
-        {
-            var lookup = BuildPackageLookup();
-
-            var packages = await lookup.Lookup("Moq", false, NuGetSources.GlobalFeed);
-
-            Assert.That(packages, Is.Not.Null);
-
-            var packageList = packages.ToList();
-            var latest = packageList
-                .OrderByDescending(p => p.Identity.Version)
-                .FirstOrDefault();
-
-            Assert.That(latest, Is.Not.Null);
-            Assert.That(latest.Dependencies, Is.Not.Null);
-            Assert.That(latest.Dependencies, Is.Not.Empty);
-        }
-
-        [Test]
-        public async Task CanBeCalledTwice()
-        {
-            var lookup = BuildPackageLookup();
-            var packages1 = await lookup.Lookup("Newtonsoft.Json", false, NuGetSources.GlobalFeed);
-            Assert.That(packages1, Is.Not.Null);
-
-            var packages2 = await lookup.Lookup("Moq", false, NuGetSources.GlobalFeed);
-            Assert.That(packages2, Is.Not.Null);
-        }
-
-        [Test]
-        public async Task CanBeCalledInParallel()
-        {
-            var lookup = BuildPackageLookup();
-
-            var tasks = new List<Task<IReadOnlyCollection<PackageSearchMetadata>>>();
-
-            for (int i = 0; i < 10; i++)
-            {
-                var task = lookup.Lookup("Newtonsoft.Json", false, NuGetSources.GlobalFeed);
-                tasks.Add(task);
-            }
-
-            await Task.WhenAll(tasks);
-
-            foreach (var task in tasks)
-            {
-                Assert.That(task.IsCompletedSuccessfully);
-            }
-        }
-
-        private IPackageVersionsLookup BuildPackageLookup()
-        {
-            return new PackageVersionsLookup(NugetLogger, NukeeperLogger);
-        }
+    private IPackageVersionsLookup BuildPackageLookup()
+    {
+        return new PackageVersionsLookup(NugetLogger, NukeeperLogger);
     }
 }

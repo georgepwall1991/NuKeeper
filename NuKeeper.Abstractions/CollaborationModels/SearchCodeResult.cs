@@ -1,12 +1,11 @@
-namespace NuKeeper.Abstractions.CollaborationModels
-{
-    public class SearchCodeResult
-    {
-        public SearchCodeResult(int totalCount)
-        {
-            TotalCount = totalCount;
-        }
+namespace NuKeeper.Abstractions.CollaborationModels;
 
-        public int TotalCount { get; set; }
+public class SearchCodeResult
+{
+    public SearchCodeResult(int totalCount)
+    {
+        TotalCount = totalCount;
     }
+
+    public int TotalCount { get; set; }
 }

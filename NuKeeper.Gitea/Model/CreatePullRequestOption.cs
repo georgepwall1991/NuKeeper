@@ -1,39 +1,24 @@
 using System.Text.Json.Serialization;
-using System;
-using System.Collections.Generic;
 
-namespace NuKeeper.Gitea.Model
+namespace NuKeeper.Gitea.Model;
+
+public class CreatePullRequestOption
 {
-    public class CreatePullRequestOption
-    {
-        [JsonPropertyName("assignee")]
-        public string Assignee { get; set; }
+    [JsonPropertyName("assignee")] public string Assignee { get; set; }
 
-        [JsonPropertyName("base")]
-        public string Base { get; set; }
+    [JsonPropertyName("base")] public string Base { get; set; }
 
-        [JsonPropertyName("body")]
-        public string Body { get; set; }
+    [JsonPropertyName("body")] public string Body { get; set; }
 
-        [JsonPropertyName("due_date")]
-        public DateTime DueDate { get; set; }
+    [JsonPropertyName("due_date")] public DateTime DueDate { get; set; }
 
-        public string Head { get; set; }
+    public string Head { get; set; }
 
-        [JsonPropertyName("milestone")]
-        public long Milestone { get; set; }
+    [JsonPropertyName("milestone")] public long Milestone { get; set; }
 
-        [JsonPropertyName("title")]
-        public string Title { get; set; }
+    [JsonPropertyName("title")] public string Title { get; set; }
 
-        [JsonPropertyName("assignees")]
-        public IEnumerable<string> Assginees
-        {
-            get;
-            set;
-        }
+    [JsonPropertyName("assignees")] public IEnumerable<string> Assginees { get; set; }
 
-        [JsonPropertyName("labels")]
-        public IEnumerable<long> Labels { get; set; }
-    }
+    [JsonPropertyName("labels")] public IEnumerable<long> Labels { get; set; }
 }

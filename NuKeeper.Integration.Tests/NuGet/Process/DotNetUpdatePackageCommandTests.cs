@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using NuGet.Configuration;
 using NuGet.Versioning;
 using NuKeeper.Abstractions.Inspections.Files;
@@ -7,18 +8,26 @@ using NuKeeper.Inspection.Files;
 using NuKeeper.Update.Process;
 using NuKeeper.Update.ProcessRunner;
 using NUnit.Framework;
-using System;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 
-namespace NuKeeper.Integration.Tests.NuGet.Process
+namespace NuKeeper.Integration.Tests.NuGet.Process;
+
+[TestFixture]
+public class DotNetUpdatePackageCommandTests : TestWithFailureLogging
 {
-    [TestFixture]
-    public class DotNetUpdatePackageCommandTests : TestWithFailureLogging
+    [SetUp]
+    public void Setup()
     {
-        private readonly string _testWebApiProject =
-@"<Project ToolsVersion=""15.0"" DefaultTargets=""Build"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
+        _uniqueTemporaryFolder = UniqueTemporaryFolder();
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        _uniqueTemporaryFolder.TryDelete();
+    }
+
+    private readonly string _testWebApiProject =
+        @"<Project ToolsVersion=""15.0"" DefaultTargets=""Build"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
   <Import Project=""$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"" Condition=""Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"" />
   <ItemGroup><PackageReference Include=""Microsoft.AspNet.WebApi.Client""><Version>{packageVersion}</Version></PackageReference></ItemGroup>
   <PropertyGroup>
@@ -35,8 +44,8 @@ namespace NuKeeper.Integration.Tests.NuGet.Process
   <Import Project=""$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets"" Condition=""Exists('$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets')"" />
 </Project>";
 
-        private readonly string _testDotNetCoreProject =
-@"<Project Sdk=""Microsoft.NET.Sdk"">
+    private readonly string _testDotNetCoreProject =
+        @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
@@ -46,8 +55,8 @@ namespace NuKeeper.Integration.Tests.NuGet.Process
 </Project>
 ";
 
-        private readonly string _testDotNetClassicProject =
-@"<Project ToolsVersion=""14.0"" DefaultTargets=""Build"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
+    private readonly string _testDotNetClassicProject =
+        @"<Project ToolsVersion=""14.0"" DefaultTargets=""Build"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
   <Import Project=""$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"" Condition=""Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"" />
   <PropertyGroup>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
@@ -63,97 +72,89 @@ namespace NuKeeper.Integration.Tests.NuGet.Process
   <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />
 </Project>";
 
-        private IFolder _uniqueTemporaryFolder;
+    private IFolder _uniqueTemporaryFolder;
 
-        [SetUp]
-        public void Setup()
+    [Test]
+    public async Task ShouldNotThrowOnWebProjectMixedStyleUpdates()
+    {
+        await ExecuteValidUpdateTest(_testWebApiProject, PackageReferenceType.ProjectFileOldStyle);
+    }
+
+    [Test]
+    public async Task ShouldUpdateDotnetCoreProject()
+    {
+        await ExecuteValidUpdateTest(_testDotNetCoreProject, PackageReferenceType.ProjectFile);
+    }
+
+    [Test]
+    public async Task ShouldUpdateDuplicateProject()
+    {
+        const string name = nameof(ShouldUpdateDuplicateProject);
+        var projectPath = Path.Combine(_uniqueTemporaryFolder.FullPath, name, "AnotherProject.csproj");
+        Directory.CreateDirectory(Path.GetDirectoryName(projectPath));
+        using (File.Create(projectPath))
         {
-            _uniqueTemporaryFolder = UniqueTemporaryFolder();
+            // close file stream automatically
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _uniqueTemporaryFolder.TryDelete();
-        }
+        await ExecuteValidUpdateTest(_testDotNetCoreProject, PackageReferenceType.ProjectFile);
+    }
 
-        [Test]
-        public async Task ShouldNotThrowOnWebProjectMixedStyleUpdates()
-        {
-            await ExecuteValidUpdateTest(_testWebApiProject, PackageReferenceType.ProjectFileOldStyle);
-        }
+    [Test]
+    public async Task ShouldUpdateDotnetClassicWithPackageReference()
+    {
+        await ExecuteValidUpdateTest(_testDotNetClassicProject, PackageReferenceType.ProjectFileOldStyle);
+    }
 
-        [Test]
-        public async Task ShouldUpdateDotnetCoreProject()
-        {
-            await ExecuteValidUpdateTest(_testDotNetCoreProject, PackageReferenceType.ProjectFile);
-        }
-
-        [Test]
-        public async Task ShouldUpdateDuplicateProject()
-        {
-            const string name = nameof(ShouldUpdateDuplicateProject);
-            var projectPath = Path.Combine(_uniqueTemporaryFolder.FullPath, name, "AnotherProject.csproj");
-            Directory.CreateDirectory(Path.GetDirectoryName(projectPath));
-            using (File.Create(projectPath))
-            {
-                // close file stream automatically
-            }
-
-            await ExecuteValidUpdateTest(_testDotNetCoreProject, PackageReferenceType.ProjectFile);
-        }
-
-        [Test]
-        public async Task ShouldUpdateDotnetClassicWithPackageReference()
-        {
-            await ExecuteValidUpdateTest(_testDotNetClassicProject, PackageReferenceType.ProjectFileOldStyle);
-        }
-
-        [Test]
-        public async Task ShouldUpdateProjectFilenameWithSpaces()
-        {
-            await ExecuteValidUpdateTest(_testDotNetClassicProject, PackageReferenceType.ProjectFileOldStyle, "Project With Spaces.csproj");
-        }
+    [Test]
+    public async Task ShouldUpdateProjectFilenameWithSpaces()
+    {
+        await ExecuteValidUpdateTest(_testDotNetClassicProject, PackageReferenceType.ProjectFileOldStyle,
+            "Project With Spaces.csproj");
+    }
 
 
-        private async Task ExecuteValidUpdateTest(
-            string testProjectContents,
-            PackageReferenceType packageReferenceType,
-            [CallerMemberName] string memberName = "")
-        {
-            const string oldPackageVersion = "5.2.3";
-            const string newPackageVersion = "5.2.4";
-            const string expectedPackageString =
-                "<PackageReference Include=\"Microsoft.AspNet.WebApi.Client\" Version=\"{packageVersion}\" />";
+    private async Task ExecuteValidUpdateTest(
+        string testProjectContents,
+        PackageReferenceType packageReferenceType,
+        [CallerMemberName] string memberName = "")
+    {
+        const string oldPackageVersion = "5.2.3";
+        const string newPackageVersion = "5.2.4";
+        const string expectedPackageString =
+            "<PackageReference Include=\"Microsoft.AspNet.WebApi.Client\" Version=\"{packageVersion}\" />";
 
-            var testFolder = memberName;
-            var testProject = $"{memberName}.csproj";
+        var testFolder = memberName;
+        var testProject = $"{memberName}.csproj";
 
-            var workDirectory = Path.Combine(_uniqueTemporaryFolder.FullPath, testFolder);
-            Directory.CreateDirectory(workDirectory);
+        var workDirectory = Path.Combine(_uniqueTemporaryFolder.FullPath, testFolder);
+        Directory.CreateDirectory(workDirectory);
 
-            var projectContents = testProjectContents.Replace("{packageVersion}", oldPackageVersion, StringComparison.OrdinalIgnoreCase);
-            var projectPath = Path.Combine(workDirectory, testProject);
-            await File.WriteAllTextAsync(projectPath, projectContents);
+        var projectContents =
+            testProjectContents.Replace("{packageVersion}", oldPackageVersion, StringComparison.OrdinalIgnoreCase);
+        var projectPath = Path.Combine(workDirectory, testProject);
+        await File.WriteAllTextAsync(projectPath, projectContents);
 
-            var command = new DotNetUpdatePackageCommand(new ExternalProcess(NukeeperLogger));
+        var command = new DotNetUpdatePackageCommand(new ExternalProcess(NukeeperLogger));
 
-            var packageToUpdate = new PackageInProject("Microsoft.AspNet.WebApi.Client", oldPackageVersion,
-                new PackagePath(workDirectory, testProject, packageReferenceType));
+        var packageToUpdate = new PackageInProject("Microsoft.AspNet.WebApi.Client", oldPackageVersion,
+            new PackagePath(workDirectory, testProject, packageReferenceType));
 
-            await command.Invoke(packageToUpdate, new NuGetVersion(newPackageVersion),
-                new PackageSource(NuGetConstants.V3FeedUrl), NuGetSources.GlobalFeed);
+        await command.Invoke(packageToUpdate, new NuGetVersion(newPackageVersion),
+            new PackageSource(NuGetConstants.V3FeedUrl), NuGetSources.GlobalFeed);
 
-            var contents = await File.ReadAllTextAsync(projectPath);
-            Assert.That(contents, Does.Contain(expectedPackageString.Replace("{packageVersion}", newPackageVersion, StringComparison.OrdinalIgnoreCase)));
-            Assert.That(contents,
-                Does.Not.Contain(expectedPackageString.Replace("{packageVersion}", oldPackageVersion, StringComparison.OrdinalIgnoreCase)));
-        }
+        var contents = await File.ReadAllTextAsync(projectPath);
+        Assert.That(contents,
+            Does.Contain(expectedPackageString.Replace("{packageVersion}", newPackageVersion,
+                StringComparison.OrdinalIgnoreCase)));
+        Assert.That(contents,
+            Does.Not.Contain(expectedPackageString.Replace("{packageVersion}", oldPackageVersion,
+                StringComparison.OrdinalIgnoreCase)));
+    }
 
-        private IFolder UniqueTemporaryFolder()
-        {
-            var factory = new FolderFactory(NukeeperLogger);
-            return factory.UniqueTemporaryFolder();
-        }
+    private IFolder UniqueTemporaryFolder()
+    {
+        var factory = new FolderFactory(NukeeperLogger);
+        return factory.UniqueTemporaryFolder();
     }
 }

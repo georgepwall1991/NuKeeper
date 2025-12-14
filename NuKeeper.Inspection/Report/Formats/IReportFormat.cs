@@ -1,12 +1,10 @@
-using System.Collections.Generic;
 using NuKeeper.Abstractions.RepositoryInspection;
 
-namespace NuKeeper.Inspection.Report.Formats
+namespace NuKeeper.Inspection.Report.Formats;
+
+public interface IReportFormat
 {
-    public interface IReportFormat
-    {
-        void Write(
-            string name,
-            IReadOnlyCollection<PackageUpdateSet> updates);
-    }
+    void Write(
+        string name,
+        IReadOnlyCollection<PackageUpdateSet> updates);
 }

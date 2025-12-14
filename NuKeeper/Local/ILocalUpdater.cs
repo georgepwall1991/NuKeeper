@@ -1,18 +1,15 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using NuKeeper.Abstractions.Configuration;
 using NuKeeper.Abstractions.Inspections.Files;
 using NuKeeper.Abstractions.NuGet;
 using NuKeeper.Abstractions.RepositoryInspection;
 
-namespace NuKeeper.Local
+namespace NuKeeper.Local;
+
+public interface ILocalUpdater
 {
-    public interface ILocalUpdater
-    {
-        Task ApplyUpdates(
-            IReadOnlyCollection<PackageUpdateSet> updates,
-            IFolder workingFolder,
-            NuGetSources sources,
-            SettingsContainer settings);
-    }
+    Task ApplyUpdates(
+        IReadOnlyCollection<PackageUpdateSet> updates,
+        IFolder workingFolder,
+        NuGetSources sources,
+        SettingsContainer settings);
 }

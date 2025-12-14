@@ -1,6 +1,4 @@
-using System;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using NuGet.Configuration;
 using NuGet.Versioning;
 using NuKeeper.Abstractions.Logging;
@@ -8,67 +6,57 @@ using NuKeeper.Abstractions.NuGet;
 using NuKeeper.Abstractions.RepositoryInspection;
 using NuKeeper.Update.ProcessRunner;
 
-namespace NuKeeper.Update.Process
-{
-    public class NuGetUpdatePackageCommand : INuGetUpdatePackageCommand
-    {
-        private readonly IExternalProcess _externalProcess;
-        private readonly INuKeeperLogger _logger;
-        private readonly INuGetPath _nuGetPath;
-        private readonly IMonoExecutor _monoExecutor;
+namespace NuKeeper.Update.Process;
 
-        public NuGetUpdatePackageCommand(
-            INuKeeperLogger logger,
-            INuGetPath nuGetPath,
-            IMonoExecutor monoExecutor,
-            IExternalProcess externalProcess)
+public class NuGetUpdatePackageCommand : INuGetUpdatePackageCommand
+{
+    private readonly IExternalProcess _externalProcess;
+    private readonly INuKeeperLogger _logger;
+    private readonly IMonoExecutor _monoExecutor;
+    private readonly INuGetPath _nuGetPath;
+
+    public NuGetUpdatePackageCommand(
+        INuKeeperLogger logger,
+        INuGetPath nuGetPath,
+        IMonoExecutor monoExecutor,
+        IExternalProcess externalProcess)
+    {
+        _logger = logger;
+        _nuGetPath = nuGetPath;
+        _monoExecutor = monoExecutor;
+        _externalProcess = externalProcess;
+    }
+
+    public async Task Invoke(PackageInProject currentPackage,
+        NuGetVersion newVersion, PackageSource packageSource, NuGetSources allSources)
+    {
+        if (currentPackage == null) throw new ArgumentNullException(nameof(currentPackage));
+
+        if (allSources == null) throw new ArgumentNullException(nameof(allSources));
+
+        var projectPath = currentPackage.Path.Info.DirectoryName;
+
+        var nuget = _nuGetPath.Executable;
+        if (string.IsNullOrWhiteSpace(nuget))
         {
-            _logger = logger;
-            _nuGetPath = nuGetPath;
-            _monoExecutor = monoExecutor;
-            _externalProcess = externalProcess;
+            _logger.Normal("Cannot find NuGet.exe for package update");
+            return;
         }
 
-        public async Task Invoke(PackageInProject currentPackage,
-            NuGetVersion newVersion, PackageSource packageSource, NuGetSources allSources)
+        var sources = allSources.CommandLine("-Source");
+        var updateCommand =
+            $"update packages.config -Id {currentPackage.Id} -Version {newVersion} {sources} -NonInteractive";
+
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            if (currentPackage == null)
-            {
-                throw new ArgumentNullException(nameof(currentPackage));
-            }
-
-            if (allSources == null)
-            {
-                throw new ArgumentNullException(nameof(allSources));
-            }
-
-            var projectPath = currentPackage.Path.Info.DirectoryName;
-
-            var nuget = _nuGetPath.Executable;
-            if (string.IsNullOrWhiteSpace(nuget))
-            {
-                _logger.Normal("Cannot find NuGet.exe for package update");
-                return;
-            }
-
-            var sources = allSources.CommandLine("-Source");
-            var updateCommand = $"update packages.config -Id {currentPackage.Id} -Version {newVersion} {sources} -NonInteractive";
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                if (await _monoExecutor.CanRun())
-                {
-                    await _monoExecutor.Run(projectPath, nuget, updateCommand, true).ConfigureAwait(false);
-                }
-                else
-                {
-                    _logger.Error("Cannot run NuGet.exe. It requires either Windows OS Platform or Mono installation");
-                }
-            }
+            if (await _monoExecutor.CanRun())
+                await _monoExecutor.Run(projectPath, nuget, updateCommand, true).ConfigureAwait(false);
             else
-            {
-                await _externalProcess.Run(projectPath, nuget, updateCommand, true).ConfigureAwait(false);
-            }
+                _logger.Error("Cannot run NuGet.exe. It requires either Windows OS Platform or Mono installation");
+        }
+        else
+        {
+            await _externalProcess.Run(projectPath, nuget, updateCommand, true).ConfigureAwait(false);
         }
     }
 }

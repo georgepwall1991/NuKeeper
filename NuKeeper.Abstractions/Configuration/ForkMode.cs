@@ -1,9 +1,8 @@
-namespace NuKeeper.Abstractions.Configuration
+namespace NuKeeper.Abstractions.Configuration;
+
+public enum ForkMode
 {
-    public enum ForkMode
-    {
-        PreferFork,
-        PreferSingleRepository,
-        SingleRepositoryOnly
-    }
+    PreferFork,
+    PreferSingleRepository,
+    SingleRepositoryOnly
 }

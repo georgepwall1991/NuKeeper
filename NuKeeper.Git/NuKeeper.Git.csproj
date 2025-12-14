@@ -3,10 +3,10 @@
     <NoWarn>$(NoWarn);1701;1702;CA1031</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
+    <PackageReference Include="LibGit2Sharp" Version="0.31.0"/>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NuKeeper.Abstractions\NuKeeper.Abstractions.csproj" />
-    <ProjectReference Include="..\NuKeeper.Update\NuKeeper.Update.csproj" />
+    <ProjectReference Include="..\NuKeeper.Abstractions\NuKeeper.Abstractions.csproj"/>
+    <ProjectReference Include="..\NuKeeper.Update\NuKeeper.Update.csproj"/>
   </ItemGroup>
 </Project>

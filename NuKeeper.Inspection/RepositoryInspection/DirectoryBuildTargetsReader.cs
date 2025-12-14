@@ -1,82 +1,72 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Xml.Linq;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.Logging;
 using NuKeeper.Abstractions.RepositoryInspection;
 
-namespace NuKeeper.Inspection.RepositoryInspection
+namespace NuKeeper.Inspection.RepositoryInspection;
+
+public class DirectoryBuildTargetsReader : IPackageReferenceFinder
 {
-    public class DirectoryBuildTargetsReader : IPackageReferenceFinder
+    private readonly INuKeeperLogger _logger;
+    private readonly PackageInProjectReader _packageInProjectReader;
+
+    public DirectoryBuildTargetsReader(INuKeeperLogger logger)
     {
-        private readonly INuKeeperLogger _logger;
-        private readonly PackageInProjectReader _packageInProjectReader;
+        _logger = logger;
+        _packageInProjectReader = new PackageInProjectReader(logger);
+    }
 
-        public DirectoryBuildTargetsReader(INuKeeperLogger logger)
+    public IReadOnlyCollection<PackageInProject> ReadFile(string baseDirectory, string relativePath)
+    {
+        var packagePath = new PackagePath(baseDirectory, relativePath, PackageReferenceType.DirectoryBuildTargets);
+        try
         {
-            _logger = logger;
-            _packageInProjectReader = new PackageInProjectReader(logger);
-        }
-
-        public IReadOnlyCollection<PackageInProject> ReadFile(string baseDirectory, string relativePath)
-        {
-            var packagePath = new PackagePath(baseDirectory, relativePath, PackageReferenceType.DirectoryBuildTargets);
-            try
+            using (var fileContents = File.OpenRead(packagePath.FullName))
             {
-                using (var fileContents = File.OpenRead(packagePath.FullName))
-                {
-                    return Read(fileContents, packagePath);
-                }
-            }
-            catch (IOException ex)
-            {
-                throw new NuKeeperException($"Unable to parse file {packagePath.FullName}", ex);
+                return Read(fileContents, packagePath);
             }
         }
-
-        public IReadOnlyCollection<string> GetFilePatterns()
+        catch (IOException ex)
         {
-            return new[] { "Directory.Build.props", "Directory.Packages.props", "Directory.Build.targets", "Packages.props" };
+            throw new NuKeeperException($"Unable to parse file {packagePath.FullName}", ex);
         }
+    }
 
-        public IReadOnlyCollection<PackageInProject> Read(Stream fileContents, PackagePath path)
-        {
-            var xml = XDocument.Load(fileContents);
+    public IReadOnlyCollection<string> GetFilePatterns()
+    {
+        return new[]
+            { "Directory.Build.props", "Directory.Packages.props", "Directory.Build.targets", "Packages.props" };
+    }
 
-            var packagesNode = xml.Element("Project")?.Elements("ItemGroup");
-            if (packagesNode == null)
-            {
-                return Array.Empty<PackageInProject>();
-            }
+    public IReadOnlyCollection<PackageInProject> Read(Stream fileContents, PackagePath path)
+    {
+        var xml = XDocument.Load(fileContents);
 
-            var packageRefs = packagesNode.Elements("PackageReference");
-            var packageDownloads = packagesNode.Elements("PackageDownload");
-            var packageVersions = packagesNode.Elements("PackageVersion");
+        var packagesNode = xml.Element("Project")?.Elements("ItemGroup");
+        if (packagesNode == null) return Array.Empty<PackageInProject>();
 
-            return packageRefs
-                .Concat(packageDownloads)
-                .Concat(packageVersions)
-                .Select(el => XmlToPackage(el, path))
-                .Where(el => el != null)
-                .ToList();
-        }
+        var packageRefs = packagesNode.Elements("PackageReference");
+        var packageDownloads = packagesNode.Elements("PackageDownload");
+        var packageVersions = packagesNode.Elements("PackageVersion");
 
-        private PackageInProject XmlToPackage(XElement el, PackagePath path)
-        {
-            var id = el.Attribute("Include")?.Value;
-            if (id == null)
-            {
-                id = el.Attribute("Update")?.Value;
-            }
-            var version = GetVersion(el);
-            return _packageInProjectReader.Read(id, version, path, null);
-        }
+        return packageRefs
+            .Concat(packageDownloads)
+            .Concat(packageVersions)
+            .Select(el => XmlToPackage(el, path))
+            .Where(el => el != null)
+            .ToList();
+    }
 
-        private static string GetVersion(XElement el)
-        {
-            return el.Attribute("Version")?.Value ?? el.Element("Version")?.Value;
-        }
+    private PackageInProject XmlToPackage(XElement el, PackagePath path)
+    {
+        var id = el.Attribute("Include")?.Value;
+        if (id == null) id = el.Attribute("Update")?.Value;
+        var version = GetVersion(el);
+        return _packageInProjectReader.Read(id, version, path, null);
+    }
+
+    private static string GetVersion(XElement el)
+    {
+        return el.Attribute("Version")?.Value ?? el.Element("Version")?.Value;
     }
 }

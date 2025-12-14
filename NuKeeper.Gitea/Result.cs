@@ -1,30 +1,28 @@
-using System;
+namespace NuKeeper.Gitea;
 
-namespace NuKeeper.Gitea
+internal class Result<T>
 {
-    class Result<T>
+    private readonly T _value;
+
+    private Result(T value, bool isSuccessful)
     {
-        private readonly T _value;
-        public bool IsSuccessful { get; }
+        _value = value;
+        IsSuccessful = isSuccessful;
+    }
 
-        public T Value => IsSuccessful
-            ? _value
-            : throw new InvalidOperationException("Trying to request a value of a failed result.");
+    public bool IsSuccessful { get; }
 
-        private Result(T value, bool isSuccessful)
-        {
-            _value = value;
-            IsSuccessful = isSuccessful;
-        }
+    public T Value => IsSuccessful
+        ? _value
+        : throw new InvalidOperationException("Trying to request a value of a failed result.");
 
-        public static Result<T> Success(T value)
-        {
-            return new Result<T>(value, true);
-        }
+    public static Result<T> Success(T value)
+    {
+        return new Result<T>(value, true);
+    }
 
-        public static Result<T> Failure()
-        {
-            return new Result<T>(default, false);
-        }
+    public static Result<T> Failure()
+    {
+        return new Result<T>(default, false);
     }
 }

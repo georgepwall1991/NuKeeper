@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\NuKeeper.Inspection\NuKeeper.Inspection.csproj" />
+    <ProjectReference Include="..\NuKeeper.Inspection\NuKeeper.Inspection.csproj"/>
   </ItemGroup>
 </Project>

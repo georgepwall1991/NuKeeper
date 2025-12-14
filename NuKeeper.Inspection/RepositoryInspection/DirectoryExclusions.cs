@@ -1,34 +1,28 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+namespace NuKeeper.Inspection.RepositoryInspection;
 
-namespace NuKeeper.Inspection.RepositoryInspection
+public class DirectoryExclusions : IDirectoryExclusions
 {
-    public class DirectoryExclusions : IDirectoryExclusions
+    private static readonly List<string> ExcludedDirNames = new()
     {
-        public bool PathIsExcluded(string path)
-        {
-            return ExcludedDirNames.Any(s => PathContains(path, s));
-        }
+        ".git",
+        ".vs",
+        "obj",
+        "bin",
+        "node_modules",
+        "packages"
+    };
 
-        private static bool PathContains(string fullPath, string dirName)
-        {
-            var dirInPath = Path.DirectorySeparatorChar + dirName + Path.DirectorySeparatorChar;
+    public bool PathIsExcluded(string path)
+    {
+        return ExcludedDirNames.Any(s => PathContains(path, s));
+    }
 
-            return
-                !string.IsNullOrEmpty(fullPath) &&
-                 (fullPath.IndexOf(dirInPath, StringComparison.InvariantCultureIgnoreCase) >= 0);
-        }
+    private static bool PathContains(string fullPath, string dirName)
+    {
+        var dirInPath = Path.DirectorySeparatorChar + dirName + Path.DirectorySeparatorChar;
 
-        private static readonly List<string> ExcludedDirNames = new List<string>
-        {
-            ".git",
-            ".vs",
-            "obj",
-            "bin",
-            "node_modules",
-            "packages"
-        };
+        return
+            !string.IsNullOrEmpty(fullPath) &&
+            fullPath.IndexOf(dirInPath, StringComparison.InvariantCultureIgnoreCase) >= 0;
     }
 }

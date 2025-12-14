@@ -1,56 +1,48 @@
-using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.Configuration;
 using NuKeeper.Inspection.Logging;
 using NuKeeper.Local;
 
-namespace NuKeeper.Commands
+namespace NuKeeper.Commands;
+
+[Command("update", Description = "Applies relevant updates to a local project.")]
+internal class UpdateCommand : LocalNuKeeperCommand
 {
-    [Command("update", Description = "Applies relevant updates to a local project.")]
-    internal class UpdateCommand : LocalNuKeeperCommand
+    private readonly ILocalEngine _engine;
+
+    public UpdateCommand(ILocalEngine engine, IConfigureLogger logger, IFileSettingsCache fileSettingsCache)
+        : base(logger, fileSettingsCache)
     {
-        [Option(CommandOptionType.SingleValue, ShortName = "m", LongName = "maxpackageupdates",
-            Description = "Maximum number of package updates to make. Defaults to 1.")]
-        public int? MaxPackageUpdates { get; set; }
+        _engine = engine;
+    }
 
-        private readonly ILocalEngine _engine;
+    [Option(CommandOptionType.SingleValue, ShortName = "m", LongName = "maxpackageupdates",
+        Description = "Maximum number of package updates to make. Defaults to 1.")]
+    public int? MaxPackageUpdates { get; set; }
 
-        public UpdateCommand(ILocalEngine engine, IConfigureLogger logger, IFileSettingsCache fileSettingsCache)
-            : base(logger, fileSettingsCache)
-        {
-            _engine = engine;
-        }
+    protected override async Task<ValidationResult> PopulateSettings(SettingsContainer settings)
+    {
+        var baseResult = await base.PopulateSettings(settings).ConfigureAwait(false);
+        if (!baseResult.IsSuccess) return baseResult;
 
-        protected override async Task<ValidationResult> PopulateSettings(SettingsContainer settings)
-        {
-            var baseResult = await base.PopulateSettings(settings).ConfigureAwait(false);
-            if (!baseResult.IsSuccess)
-            {
-                return baseResult;
-            }
+        const int defaultMaxPackageUpdates = 1;
+        var fileSettings = FileSettingsCache.GetSettings();
 
-            const int defaultMaxPackageUpdates = 1;
-            var fileSettings = FileSettingsCache.GetSettings();
+        var maxUpdates = Concat.FirstValue(
+            MaxPackageUpdates,
+            fileSettings.MaxPackageUpdates,
+            defaultMaxPackageUpdates);
 
-            var maxUpdates = Concat.FirstValue(
-                MaxPackageUpdates,
-                fileSettings.MaxPackageUpdates,
-                defaultMaxPackageUpdates);
+        if (maxUpdates < 1) return ValidationResult.Failure($"Max package updates of {maxUpdates} is not valid");
 
-            if (maxUpdates < 1)
-            {
-                return ValidationResult.Failure($"Max package updates of {maxUpdates} is not valid");
-            }
+        settings.PackageFilters.MaxPackageUpdates = maxUpdates;
+        return ValidationResult.Success;
+    }
 
-            settings.PackageFilters.MaxPackageUpdates = maxUpdates;
-            return ValidationResult.Success;
-        }
-
-        protected override async Task<int> Run(SettingsContainer settings)
-        {
-            await _engine.Run(settings, true).ConfigureAwait(false);
-            return 0;
-        }
+    protected override async Task<int> Run(SettingsContainer settings)
+    {
+        await _engine.Run(settings, true).ConfigureAwait(false);
+        return 0;
     }
 }

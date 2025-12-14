@@ -2,37 +2,30 @@ using NuKeeper.Abstractions.Inspections.Files;
 using NuKeeper.Abstractions.Logging;
 using NuKeeper.Abstractions.NuGet;
 
-namespace NuKeeper.Inspection.Sources
+namespace NuKeeper.Inspection.Sources;
+
+public class NuGetSourcesReader : INuGetSourcesReader
 {
-    public class NuGetSourcesReader : INuGetSourcesReader
+    private readonly INuKeeperLogger _logger;
+    private readonly INuGetConfigFileReader _reader;
+
+    public NuGetSourcesReader(
+        INuGetConfigFileReader reader,
+        INuKeeperLogger logger)
     {
-        private readonly INuGetConfigFileReader _reader;
-        private readonly INuKeeperLogger _logger;
+        _reader = reader;
+        _logger = logger;
+    }
 
-        public NuGetSourcesReader(
-            INuGetConfigFileReader reader,
-            INuKeeperLogger logger)
-        {
-            _reader = reader;
-            _logger = logger;
-        }
+    public NuGetSources Read(IFolder workingFolder, NuGetSources overrideValues)
+    {
+        if (overrideValues != null) return overrideValues;
 
-        public NuGetSources Read(IFolder workingFolder, NuGetSources overrideValues)
-        {
-            if (overrideValues != null)
-            {
-                return overrideValues;
-            }
+        var fromConfigFile = _reader.ReadNugetSources(workingFolder);
 
-            var fromConfigFile = _reader.ReadNugetSources(workingFolder);
+        if (fromConfigFile != null) return fromConfigFile;
 
-            if (fromConfigFile != null)
-            {
-                return fromConfigFile;
-            }
-
-            _logger.Detailed("Using default global NuGet feed");
-            return NuGetSources.GlobalFeed;
-        }
+        _logger.Detailed("Using default global NuGet feed");
+        return NuGetSources.GlobalFeed;
     }
 }

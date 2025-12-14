@@ -3,7 +3,7 @@
     <NoWarn>$(NoWarn);1701;1702;CA1051;CA1707;CA1724;CA2227;CA1056;CA2007;CA1031</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NuKeeper.Abstractions\NuKeeper.Abstractions.csproj" />
-    <ProjectReference Include="..\NuKeeper.GitHub\NuKeeper.GitHub.csproj" />
+    <ProjectReference Include="..\NuKeeper.Abstractions\NuKeeper.Abstractions.csproj"/>
+    <ProjectReference Include="..\NuKeeper.GitHub\NuKeeper.GitHub.csproj"/>
   </ItemGroup>
 </Project>

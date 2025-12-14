@@ -1,12 +1,9 @@
-using System;
+namespace NuKeeper;
 
-namespace NuKeeper
+[Flags]
+internal enum ExitCodes
 {
-    [Flags]
-    enum ExitCodes
-    {
-        Success = 0,
-        UnknownError = 1 << 0,
-        InvalidArguments = 1 << 1,
-    }
+    Success = 0,
+    UnknownError = 1 << 0,
+    InvalidArguments = 1 << 1
 }

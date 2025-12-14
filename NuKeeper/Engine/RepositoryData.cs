@@ -1,23 +1,21 @@
-using System;
 using NuKeeper.Abstractions.CollaborationModels;
 
-namespace NuKeeper.Engine
+namespace NuKeeper.Engine;
+
+public class RepositoryData
 {
-    public class RepositoryData
+    public RepositoryData(ForkData pull, ForkData push)
     {
-        public RepositoryData(ForkData pull, ForkData push)
-        {
-            Pull = pull ?? throw new ArgumentNullException(nameof(pull));
-            Push = push ?? throw new ArgumentNullException(nameof(push));
-            Remote = "nukeeper_push";
-        }
-
-        public ForkData Pull { get; }
-        public ForkData Push { get; }
-        public string DefaultBranch { get; set; }
-        public string Remote { get; set; }
-        public bool IsLocalRepo { get; set; }
-
-        public bool IsFork => Pull.Owner != Push.Owner;
+        Pull = pull ?? throw new ArgumentNullException(nameof(pull));
+        Push = push ?? throw new ArgumentNullException(nameof(push));
+        Remote = "nukeeper_push";
     }
+
+    public ForkData Pull { get; }
+    public ForkData Push { get; }
+    public string DefaultBranch { get; set; }
+    public string Remote { get; set; }
+    public bool IsLocalRepo { get; set; }
+
+    public bool IsFork => Pull.Owner != Push.Owner;
 }

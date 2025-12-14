@@ -1,7 +1,6 @@
-namespace NuKeeper.Inspection.RepositoryInspection
+namespace NuKeeper.Inspection.RepositoryInspection;
+
+public interface IDirectoryExclusions
 {
-    public interface IDirectoryExclusions
-    {
-        bool PathIsExcluded(string path);
-    }
+    bool PathIsExcluded(string path);
 }

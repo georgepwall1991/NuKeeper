@@ -1,6 +1,5 @@
-namespace NuKeeper.Update.Process
+namespace NuKeeper.Update.Process;
+
+public interface IDotNetUpdatePackageCommand : IPackageCommand
 {
-    public interface IDotNetUpdatePackageCommand : IPackageCommand
-    {
-    }
 }

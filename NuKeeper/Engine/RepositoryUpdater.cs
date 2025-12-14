@@ -67,7 +67,7 @@ namespace NuKeeper.Engine
 
             if (!repository.IsLocalRepo)
             {
-                await GitInit(git, repository);
+                await GitInit(git, repository).ConfigureAwait(false);
             }
 
             var userSettings = settings.UserSettings;
@@ -140,9 +140,9 @@ namespace NuKeeper.Engine
                 return (0, null);
             }
 
-            await _solutionRestore.CheckRestore(targetUpdates, settings.WorkingFolder ?? git.WorkingFolder, sources);
+            await _solutionRestore.CheckRestore(targetUpdates, settings.WorkingFolder ?? git.WorkingFolder, sources).ConfigureAwait(false);
 
-            var (updatesDone, thresholdReached) = await _packageUpdater.MakeUpdatePullRequests(git, repository, targetUpdates, sources, settings);
+            var (updatesDone, thresholdReached) = await _packageUpdater.MakeUpdatePullRequests(git, repository, targetUpdates, sources, settings).ConfigureAwait(false);
 
             if (updatesDone < targetUpdates.Count)
             {
@@ -158,9 +158,9 @@ namespace NuKeeper.Engine
 
         private static async Task GitInit(IGitDriver git, RepositoryData repository)
         {
-            await git.Clone(repository.Pull.Uri, repository.DefaultBranch);
-            repository.DefaultBranch = repository.DefaultBranch ?? await git.GetCurrentHead();
-            await git.AddRemote(repository.Remote, repository.Push.Uri);
+            await git.Clone(repository.Pull.Uri, repository.DefaultBranch).ConfigureAwait(false);
+            repository.DefaultBranch = repository.DefaultBranch ?? await git.GetCurrentHead().ConfigureAwait(false);
+            await git.AddRemote(repository.Remote, repository.Push.Uri).ConfigureAwait(false);
         }
     }
 }

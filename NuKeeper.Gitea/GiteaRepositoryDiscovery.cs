@@ -30,10 +30,10 @@ namespace NuKeeper.Gitlab
             switch (settings.Scope)
             {
                 case ServerScope.Global:
-                    return await ForAllOrgs(settings);
+                    return await ForAllOrgs(settings).ConfigureAwait(false);
 
                 case ServerScope.Organisation:
-                    return await FromOrganisation(settings.OrganisationName, settings);
+                    return await FromOrganisation(settings.OrganisationName, settings).ConfigureAwait(false);
 
                 case ServerScope.Repository:
                     return new[] { settings.Repository };
@@ -46,13 +46,13 @@ namespace NuKeeper.Gitlab
 
         private async Task<IReadOnlyCollection<RepositorySettings>> ForAllOrgs(SourceControlServerSettings settings)
         {
-            var allOrgs = await _collaborationPlatform.GetOrganizations();
+            var allOrgs = await _collaborationPlatform.GetOrganizations().ConfigureAwait(false);
 
             var allRepos = new List<RepositorySettings>();
 
             foreach (var org in allOrgs)
             {
-                var repos = await FromOrganisation(org.Name, settings);
+                var repos = await FromOrganisation(org.Name, settings).ConfigureAwait(false);
                 allRepos.AddRange(repos);
             }
 
@@ -61,7 +61,7 @@ namespace NuKeeper.Gitlab
 
         private async Task<IReadOnlyCollection<RepositorySettings>> FromOrganisation(string organisationName, SourceControlServerSettings settings)
         {
-            var allOrgRepos = await _collaborationPlatform.GetRepositoriesForOrganisation(organisationName);
+            var allOrgRepos = await _collaborationPlatform.GetRepositoriesForOrganisation(organisationName).ConfigureAwait(false);
 
             var usableRepos = allOrgRepos
                 .Where(r => MatchesIncludeExclude(r, settings))

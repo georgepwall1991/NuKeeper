@@ -37,7 +37,7 @@ namespace NuKeeper.Gitlab
 
         public async Task<User> GetCurrentUser()
         {
-            var user = await _client.GetCurrentUser();
+            var user = await _client.GetCurrentUser().ConfigureAwait(false);
 
             return new User(user.UserName, user.Name, user.Email);
         }
@@ -52,7 +52,7 @@ namespace NuKeeper.Gitlab
             var projectName = target.Owner;
             var repositoryName = target.Name;
 
-            var result = await _client.GetMergeRequests(projectName, repositoryName, headBranch, baseBranch);
+            var result = await _client.GetMergeRequests(projectName, repositoryName, headBranch, baseBranch).ConfigureAwait(false);
 
             return result.Any();
         }
@@ -83,7 +83,7 @@ namespace NuKeeper.Gitlab
                 Labels = labels.ToList()
             };
 
-            await _client.OpenMergeRequest(projectName, repositoryName, mergeRequest);
+            await _client.OpenMergeRequest(projectName, repositoryName, mergeRequest).ConfigureAwait(false);
         }
 
         public Task<IReadOnlyList<Organization>> GetOrganizations()
@@ -100,7 +100,7 @@ namespace NuKeeper.Gitlab
 
         public async Task<Repository> GetUserRepository(string userName, string repositoryName)
         {
-            var project = await _client.GetProject(userName, repositoryName);
+            var project = await _client.GetProject(userName, repositoryName).ConfigureAwait(false);
 
             return new Repository(project.Name, project.Archived,
                 new UserPermissions(true, true, true),
@@ -116,7 +116,7 @@ namespace NuKeeper.Gitlab
 
         public async Task<bool> RepositoryBranchExists(string userName, string repositoryName, string branchName)
         {
-            var result = await _client.CheckExistingBranch(userName, repositoryName, branchName);
+            var result = await _client.CheckExistingBranch(userName, repositoryName, branchName).ConfigureAwait(false);
 
             return result != null;
         }

@@ -3,93 +3,417 @@
 [![Build Status](https://dev.azure.com/nukeeper/NuKeeper/_apis/build/status/NuKeeper%20PR%20Build?branchName=master)](https://dev.azure.com/nukeeper/NuKeeper/_build/latest?definitionId=4&branchName=master)
 [![Gitter](https://img.shields.io/gitter/room/NuKeeperDotNet/Lobby.js.svg?maxAge=2592000)](https://gitter.im/NuKeeperDotNet/Lobby)
 [![NuGet](https://img.shields.io/nuget/v/NuKeeper.svg?maxAge=3600)](https://www.nuget.org/packages/NuKeeper/)
-[![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/nukeeper/NuKeeper/4.svg)](https://dev.azure.com/nukeeper/NuKeeper/_build?definitionId=4)   
+[![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/nukeeper/NuKeeper/4.svg)](https://dev.azure.com/nukeeper/NuKeeper/_build?definitionId=4)
 
-### NuKeeper
-
-#### [Why is NuKeeper Archived](https://github.com/NuKeeperDotNet/NuKeeper/issues/1155)
+## NuKeeper
 
 Automagically update NuGet packages in all .NET projects.
 
-### Installation
+> **Note:** This project was originally archived. See [Why is NuKeeper Archived](https://github.com/NuKeeperDotNet/NuKeeper/issues/1155) for context.
 
-Installation is very easy. Just run this command and the tool will be installed. 
+### What's New in v0.36
 
-Install: `dotnet tool install nukeeper --global`
+- **Modernized to .NET 10** - Now targets the latest .NET runtime
+- **Improved async patterns** - Added `ConfigureAwait(false)` throughout for better performance
+- **Enhanced error handling** - Consistent error reporting across all platform providers
+- **Updated dependencies** - All NuGet packages updated to latest versions
 
-> Note: NuKeeper has experimental support for running package updates on Linux/macOS. This functionality relies on Mono installation on local system. Please refer to https://www.mono-project.com/ for more information about how to install mono.
+---
 
-### Platform support
+## Requirements
 
-NuKeeper works for .NET Framework and for .NET Core projects. It also has the ability to target private NuGet feeds.
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) or later
+- Git installed and available in PATH
+- Platform-specific access token (GitHub, Azure DevOps, GitLab, Bitbucket, or Gitea)
 
-| .NET Framework     |     .NET Core      |    Private Nuget Feed    |
-|:------------------:|:------------------:|:------------------------:| 
-| :heavy_check_mark: | :heavy_check_mark: |     :heavy_check_mark:   |
+> **Note:** For updating legacy .NET Framework projects on Linux/macOS, [Mono](https://www.mono-project.com/) is required.
 
-Integration with the following platforms is supported.
+---
 
-|     Github         |     AzureDevOps    |      BitBucket     |       GitLab       |       Gitea        |
-|:------------------:|:------------------:|:------------------:|:------------------:|:------------------:|
-| :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+## Installation
 
-### Commands
+### As a Global Tool (Recommended)
 
-NuKeeper has different commands and options which can be utilized. Below you'll find a summary of all the commands and what they do.
-
-```
-Options:
-  --version     Show version information
-  -?|-h|--help  Show help information
-
-Commands:
-  global        Performs version checks and generates pull requests for all repositories the provided token can access.
-  inspect       Checks projects existing locally for possible updates.
-  org           Performs version checks and generates pull requests for all repositories in a github organisation.
-  repo          Performs version checks and generates pull requests for a single repository.
-  update        Applies relevant updates to a local project.
+```bash
+dotnet tool install nukeeper --global
 ```
 
-[For detailed information about the commands, please check out the wiki](https://github.com/NuKeeperDotNet/NuKeeper/wiki) 
+### Verify Installation
 
-### How To Uninstall
-
-You can uninstall the tool using the following command.
-
-```console
-dotnet tool uninstall nukeeper --global
-```
-
-### How To Build and Run From Source
-
-You can install the nukeeper dotnet tool of current build using the `InstallNuKeeperDotNetTool` (.bat for Windows, .sh for macOS and Linux) found in the root of the repository.
-
->Note: this overrides your existing global installation of the NuKeeper dotnet tool.
-
-You can build and package the tool using the following commands. The instructions assume that you are in the root of the repository.
-
-```console
-dotnet pack .\NuKeeper\NuKeeper.csproj -o ".\artifacts"
-dotnet tool install nukeeper --global --add-source ".\artifacts"
+```bash
 nukeeper --version
 ```
 
-> Note: On macOS and Linux, `.\NuKeeper\NuKeeper.csproj` and `.\artifacts` will need be switched to `./NuKeeper/NuKeeper.csproj` and `./artifacts` to accommodate for the different slash directions.
+### Update to Latest Version
 
-### Licensing
+```bash
+dotnet tool update nukeeper --global
+```
+
+### Uninstall
+
+```bash
+dotnet tool uninstall nukeeper --global
+```
+
+---
+
+## Quick Start
+
+### 1. Inspect Local Projects for Updates
+
+Check what packages can be updated without making changes:
+
+```bash
+nukeeper inspect /path/to/your/solution
+```
+
+### 2. Update Local Projects
+
+Apply package updates to your local project:
+
+```bash
+nukeeper update /path/to/your/solution
+```
+
+### 3. Create Pull Requests for a Repository
+
+Automatically create PRs for a GitHub repository:
+
+```bash
+nukeeper repo https://github.com/owner/repo --token YOUR_GITHUB_TOKEN
+```
+
+---
+
+## Commands
+
+### `inspect` - Check for Available Updates
+
+Scans local projects and reports available NuGet package updates without making changes.
+
+```bash
+# Inspect current directory
+nukeeper inspect
+
+# Inspect specific path
+nukeeper inspect /path/to/solution
+
+# Output as CSV
+nukeeper inspect --output csv
+
+# Only show major version updates
+nukeeper inspect --change Major
+```
+
+### `update` - Apply Updates Locally
+
+Applies NuGet package updates to local projects.
+
+```bash
+# Update all packages in current directory
+nukeeper update
+
+# Update specific path
+nukeeper update /path/to/solution
+
+# Limit number of updates
+nukeeper update --maxpackageupdates 5
+
+# Only apply patch updates (safest)
+nukeeper update --change Patch
+
+# Update specific package only
+nukeeper update --include PackageName
+```
+
+### `repo` - Create PRs for a Single Repository
+
+Creates pull requests with package updates for a single repository.
+
+```bash
+# GitHub
+nukeeper repo https://github.com/owner/repo --token ghp_xxxxx
+
+# Azure DevOps
+nukeeper repo https://dev.azure.com/org/project/_git/repo --token pat_xxxxx
+
+# GitLab
+nukeeper repo https://gitlab.com/owner/repo --token glpat_xxxxx
+
+# Bitbucket
+nukeeper repo https://bitbucket.org/owner/repo --token xxxxx
+
+# Gitea
+nukeeper repo https://gitea.example.com/owner/repo --token xxxxx
+```
+
+**Common Options:**
+
+```bash
+# Limit PRs created
+nukeeper repo URL --token TOKEN --maxpackageupdates 3
+
+# Target specific branch
+nukeeper repo URL --token TOKEN --targetbranch develop
+
+# Only update specific packages
+nukeeper repo URL --token TOKEN --include Newtonsoft.Json
+
+# Exclude packages from updates
+nukeeper repo URL --token TOKEN --exclude Microsoft.Extensions.*
+
+# Add labels to PRs
+nukeeper repo URL --token TOKEN --label dependencies --label automated
+
+# Set PR reviewers (Azure DevOps)
+nukeeper repo URL --token TOKEN --reviewer user@example.com
+```
+
+### `org` - Create PRs for an Organization
+
+Creates pull requests for all repositories in a GitHub organization.
+
+```bash
+nukeeper org MyOrganization --token ghp_xxxxx
+
+# Limit to specific repos
+nukeeper org MyOrganization --token TOKEN --include repo1,repo2
+
+# Exclude repos
+nukeeper org MyOrganization --token TOKEN --exclude legacy-repo
+```
+
+### `global` - Create PRs for All Accessible Repositories
+
+Creates pull requests for all repositories the token has access to.
+
+```bash
+nukeeper global --token ghp_xxxxx
+```
+
+---
+
+## Configuration Options
+
+### Change Level
+
+Control which types of updates to apply:
+
+| Level | Description | Example |
+|-------|-------------|---------|
+| `Major` | Major version updates | 1.0.0 → 2.0.0 |
+| `Minor` | Minor version updates | 1.0.0 → 1.1.0 |
+| `Patch` | Patch version updates | 1.0.0 → 1.0.1 |
+| `None` | No updates | - |
+
+```bash
+nukeeper update --change Patch
+```
+
+### Age Threshold
+
+Only update packages that have been published for a certain period (reduces risk from newly published packages):
+
+```bash
+# Only update packages published at least 14 days ago
+nukeeper update --age 14
+```
+
+### Package Filters
+
+```bash
+# Include only specific packages
+nukeeper update --include Newtonsoft.Json,Serilog
+
+# Include packages matching pattern
+nukeeper update --include Microsoft.*
+
+# Exclude specific packages
+nukeeper update --exclude EntityFramework
+
+# Exclude packages matching pattern
+nukeeper update --exclude *.Preview
+```
+
+### Consolidation
+
+Update the same package across all projects in a solution to the same version:
+
+```bash
+nukeeper update --consolidate
+```
+
+### Verbosity
+
+```bash
+nukeeper update --verbosity Detailed
+nukeeper update --verbosity Quiet
+```
+
+---
+
+## Platform Support
+
+### Project Types
+
+| Project Type | Supported |
+|:------------|:---------:|
+| .NET 8/9/10 | Yes |
+| .NET Core 3.1+ | Yes |
+| .NET Standard | Yes |
+| .NET Framework | Yes |
+| Private NuGet Feeds | Yes |
+
+### Git Platforms
+
+| Platform | Supported | Token Type |
+|:---------|:---------:|:-----------|
+| GitHub | Yes | Personal Access Token |
+| Azure DevOps | Yes | Personal Access Token |
+| GitLab | Yes | Personal Access Token |
+| Bitbucket Cloud | Yes | App Password |
+| Bitbucket Server | Yes | Personal Access Token |
+| Gitea | Yes | Access Token |
+
+---
+
+## Docker
+
+Run NuKeeper in a container:
+
+```bash
+# Pull the image
+docker pull nukeeper/nukeeper:latest
+
+# Run inspection
+docker run --rm -v /path/to/solution:/repo nukeeper/nukeeper inspect /repo
+
+# Create PRs
+docker run --rm nukeeper/nukeeper repo https://github.com/owner/repo --token TOKEN
+```
+
+### Build Docker Image Locally
+
+```bash
+docker build -t nukeeper -f Docker/SDK10.0/Dockerfile .
+```
+
+---
+
+## Building from Source
+
+### Prerequisites
+
+- .NET 10 SDK
+
+### Build
+
+```bash
+# Clone repository
+git clone https://github.com/NuKeeperDotNet/NuKeeper.git
+cd NuKeeper
+
+# Build
+dotnet build
+
+# Run tests
+dotnet test
+
+# Create NuGet package
+dotnet pack NuKeeper/NuKeeper.csproj -o ./artifacts
+
+# Install local build
+dotnet tool install nukeeper --global --add-source ./artifacts
+```
+
+---
+
+## Examples
+
+### CI/CD Integration
+
+#### GitHub Actions
+
+```yaml
+- name: Update NuGet Packages
+  run: |
+    dotnet tool install nukeeper --global
+    nukeeper repo ${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
+```
+
+#### Azure Pipelines
+
+```yaml
+- script: |
+    dotnet tool install nukeeper --global
+    nukeeper repo $(System.TeamFoundationCollectionUri)$(System.TeamProject)/_git/$(Build.Repository.Name) --token $(System.AccessToken)
+  displayName: 'Update NuGet Packages'
+```
+
+### Private NuGet Feeds
+
+```bash
+# Use custom NuGet source
+nukeeper update --source https://nuget.example.com/v3/index.json
+
+# Multiple sources
+nukeeper update --source https://api.nuget.org/v3/index.json --source https://nuget.example.com/v3/index.json
+```
+
+### Scheduled Updates
+
+Create a scheduled job to check for updates weekly:
+
+```bash
+# Cron job example (every Monday at 9am)
+0 9 * * 1 /usr/local/bin/nukeeper repo https://github.com/owner/repo --token TOKEN --maxpackageupdates 5
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**"Unable to find package"**
+- Ensure you have access to the NuGet feed
+- Check if the package requires authentication
+
+**"401 Unauthorized"**
+- Verify your token has the correct permissions
+- For GitHub: needs `repo` scope
+- For Azure DevOps: needs `Code (Read & Write)` scope
+
+**"No updates found"**
+- Try with `--verbosity Detailed` to see what's happening
+- Check your `--change` level setting
+- Verify packages aren't excluded by age threshold
+
+### Debug Mode
+
+```bash
+nukeeper update --verbosity Detailed --logfile nukeeper.log
+```
+
+---
+
+## Licensing
 
 NuKeeper is licensed under the [Apache License](http://opensource.org/licenses/apache.html)
 
-* Git automation by [LibGit2Sharp](https://github.com/libgit2/libgit2sharp/) licensed under MIT  
-* Github client by [Octokit](https://github.com/octokit/octokit.net) licensed under MIT  
-* NuGet protocol [NuGet.Protocol](https://github.com/NuGet/NuGet.Client) licensed under Apache License Version 2.0
-* NuGet CommandLine [NuGet commandLine](https://github.com/NuGet/NuGet.Client) licensed under Apache License Version 2.0
-* Command line parsing by [McMaster.Extensions.CommandLineUtils](https://github.com/natemcmaster/CommandLineUtils) licensed under Apache License Version 2.0
+### Dependencies
 
-### Acknowledgements
+* [LibGit2Sharp](https://github.com/libgit2/libgit2sharp/) - MIT
+* [Octokit](https://github.com/octokit/octokit.net) - MIT
+* [NuGet.Protocol](https://github.com/NuGet/NuGet.Client) - Apache 2.0
+* [McMaster.Extensions.CommandLineUtils](https://github.com/natemcmaster/CommandLineUtils) - Apache 2.0
 
-Logos by [area55](https://github.com/area55git), licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+---
 
+## Acknowledgements
+
+Logos by [area55](https://github.com/area55git), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 <p align="center">
   <img src="https://github.com/NuKeeperDotNet/NuKeeper/blob/master/assets/Footer.svg" />

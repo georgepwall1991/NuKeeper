@@ -37,7 +37,7 @@ namespace NuKeeper.BitBucketLocal
                     throw new NotImplementedException();
 
                 case ServerScope.Organisation:
-                    return await FromOrganisation(settings.OrganisationName, settings);
+                    return await FromOrganisation(settings.OrganisationName, settings).ConfigureAwait(false);
 
                 case ServerScope.Repository:
                     return await Task.FromResult(new List<RepositorySettings> { settings.Repository }.AsEnumerable());
@@ -52,7 +52,7 @@ namespace NuKeeper.BitBucketLocal
 
         private async Task<IReadOnlyCollection<RepositorySettings>> FromOrganisation(string organisationName, SourceControlServerSettings settings)
         {
-            var allOrgRepos = await _collaborationPlatform.GetRepositoriesForOrganisation(organisationName);
+            var allOrgRepos = await _collaborationPlatform.GetRepositoriesForOrganisation(organisationName).ConfigureAwait(false);
 
             var usableRepos = allOrgRepos
                 .Where(r => MatchesIncludeExclude(r, settings))

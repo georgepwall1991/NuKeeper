@@ -44,7 +44,7 @@ namespace NuKeeper.Git
 
         public async Task Clone(Uri pullEndpoint)
         {
-            await Clone(pullEndpoint, null);
+            await Clone(pullEndpoint, null).ConfigureAwait(false);
         }
 
         public Task Clone(Uri pullEndpoint, string branchName)
@@ -53,13 +53,13 @@ namespace NuKeeper.Git
             {
                 _logger.Normal($"Git clone {pullEndpoint}, branch {branchName ?? "default"}, to {WorkingFolder.FullPath}");
 
-                Repository.Clone(pullEndpoint.AbsoluteUri, WorkingFolder.FullPath,
-                    new CloneOptions
-                    {
-                        CredentialsProvider = UsernamePasswordCredentials,
-                        OnTransferProgress = OnTransferProgress,
-                        BranchName = branchName
-                    });
+                var cloneOptions = new CloneOptions
+                {
+                    BranchName = branchName
+                };
+                cloneOptions.FetchOptions.CredentialsProvider = UsernamePasswordCredentials;
+                cloneOptions.FetchOptions.OnTransferProgress = OnTransferProgress;
+                Repository.Clone(pullEndpoint.AbsoluteUri, WorkingFolder.FullPath, cloneOptions);
 
                 _logger.Detailed("Git clone complete");
             });

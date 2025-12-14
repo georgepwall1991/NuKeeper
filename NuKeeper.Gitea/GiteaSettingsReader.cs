@@ -42,7 +42,7 @@ namespace NuKeeper.Gitea
                 client.DefaultRequestHeaders.Accept.Add(
                     new MediaTypeWithQualityHeaderValue("application/json"));
 
-                HttpResponseMessage response = await client.GetAsync($"swagger.v1.json");
+                HttpResponseMessage response = await client.GetAsync($"swagger.v1.json").ConfigureAwait(false);
                 if (response.IsSuccessStatusCode)
                 {
                     return true;
@@ -78,7 +78,7 @@ namespace NuKeeper.Gitea
 
             var settings = repositoryUri.IsFile
                 ? await CreateSettingsFromLocal(repositoryUri, targetBranch)
-                : await CreateSettingsFromRemote(repositoryUri, targetBranch);
+                : await CreateSettingsFromRemote(repositoryUri, targetBranch).ConfigureAwait(false);
 
             return settings;
         }
@@ -115,7 +115,7 @@ namespace NuKeeper.Gitea
             if (await _gitDriver.IsGitRepo(repositoryUri))
             {
                 // Check the origin remotes
-                var origin = (await _gitDriver.GetRemotes(repositoryUri)).FirstOrDefault();
+                var origin = (await _gitDriver.GetRemotes(repositoryUri).ConfigureAwait(false)).FirstOrDefault();
 
                 if (origin != null)
                 {
@@ -133,7 +133,7 @@ namespace NuKeeper.Gitea
 
                     remoteInfo.LocalRepositoryUri = repo;
                     repositoryUri = origin.Url;
-                    remoteInfo.BranchName = targetBranch ?? await _gitDriver.GetCurrentHead(remoteInfo.LocalRepositoryUri);
+                    remoteInfo.BranchName = targetBranch ?? await _gitDriver.GetCurrentHead(remoteInfo.LocalRepositoryUri).ConfigureAwait(false);
                     remoteInfo.RemoteName = origin.Name;
                     remoteInfo.WorkingFolder = localFolder;
                 }
@@ -143,10 +143,10 @@ namespace NuKeeper.Gitea
                 throw new NuKeeperException("No git repository found");
             }
 
-            var remoteSettings = await CreateSettingsFromRemote(repositoryUri, targetBranch);
+            var remoteSettings = await CreateSettingsFromRemote(repositoryUri, targetBranch).ConfigureAwait(false);
 
 
-            return await InternalCreateRepositorySettings(remoteSettings.ApiUri, remoteSettings.RepositoryUri, remoteSettings.RepositoryName, remoteSettings.RepositoryOwner, remoteInfo);
+            return await InternalCreateRepositorySettings(remoteSettings.ApiUri, remoteSettings.RepositoryUri, remoteSettings.RepositoryName, remoteSettings.RepositoryOwner, remoteInfo).ConfigureAwait(false);
         }
 
         private static Task<RepositorySettings> InternalCreateRepositorySettings(Uri apiUri, Uri repositoryUri, string repoName, string repoOwner, RemoteInfo remoteInfo = null)

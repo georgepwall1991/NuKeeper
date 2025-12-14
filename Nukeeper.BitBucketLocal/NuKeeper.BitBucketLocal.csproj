@@ -1,19 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <NoWarn>$(NoWarn);1701;1702;CA1051;CA1707;CA2227;CA1056</NoWarn>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <NoWarn>1701;1702;CA1051;CA1707;CA2227;CA1056;</NoWarn>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\NuKeeper.Abstractions\NuKeeper.Abstractions.csproj" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <CodeAnalysisRuleSet>..\CodeAnalysisRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-
 </Project>

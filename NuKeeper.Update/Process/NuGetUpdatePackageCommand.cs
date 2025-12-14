@@ -58,7 +58,7 @@ namespace NuKeeper.Update.Process
             {
                 if (await _monoExecutor.CanRun())
                 {
-                    await _monoExecutor.Run(projectPath, nuget, updateCommand, true);
+                    await _monoExecutor.Run(projectPath, nuget, updateCommand, true).ConfigureAwait(false);
                 }
                 else
                 {
@@ -67,7 +67,7 @@ namespace NuKeeper.Update.Process
             }
             else
             {
-                await _externalProcess.Run(projectPath, nuget, updateCommand, true);
+                await _externalProcess.Run(projectPath, nuget, updateCommand, true).ConfigureAwait(false);
             }
         }
     }

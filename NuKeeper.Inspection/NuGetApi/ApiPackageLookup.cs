@@ -30,7 +30,7 @@ namespace NuKeeper.Inspection.NuGetApi
 
             var includePrerelease = ShouldAllowPrerelease(package, usePrerelease);
 
-            var foundVersions = await _packageVersionsLookup.Lookup(package.Id, includePrerelease, sources);
+            var foundVersions = await _packageVersionsLookup.Lookup(package.Id, includePrerelease, sources).ConfigureAwait(false);
             return VersionChanges.MakeVersions(package.Version, foundVersions, allowedChange);
         }
 

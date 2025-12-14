@@ -97,7 +97,7 @@ namespace NuKeeper.Commands
 
             var settings = MakeSettings();
 
-            var validationResult = await PopulateSettings(settings);
+            var validationResult = await PopulateSettings(settings).ConfigureAwait(false);
             if (!validationResult.IsSuccess)
             {
                 var logger = _configureLogger as INuKeeperLogger;
@@ -105,7 +105,7 @@ namespace NuKeeper.Commands
                 return -1;
             }
 
-            return await Run(settings);
+            return await Run(settings).ConfigureAwait(false);
         }
 
         private void InitialiseLogging()
@@ -199,7 +199,7 @@ namespace NuKeeper.Commands
                 return branchNameTemplateValid;
             }
 
-            return await Task.FromResult(ValidationResult.Success);
+            return await Task.FromResult(ValidationResult.Success).ConfigureAwait(false);
         }
 
         private TimeSpan? ReadMinPackageAge()

@@ -36,8 +36,8 @@ namespace NuKeeper.AzureDevOps
             var fullUrl = BuildAzureDevOpsUri(url, previewApi);
             _logger.Detailed($"{caller}: Requesting {fullUrl}");
 
-            var response = await _client.PostAsync(fullUrl, content);
-            return await HandleResponse<T>(response, caller);
+            var response = await _client.PostAsync(fullUrl, content).ConfigureAwait(false);
+            return await HandleResponse<T>(response, caller).ConfigureAwait(false);
         }
 
         private async Task<T> PatchResource<T>(string url, HttpContent content, bool previewApi = false, [CallerMemberName] string caller = null)
@@ -49,7 +49,7 @@ namespace NuKeeper.AzureDevOps
             {
                 Content = content
             });
-            return await HandleResponse<T>(response, caller);
+            return await HandleResponse<T>(response, caller).ConfigureAwait(false);
         }
 
         private async Task<T> GetResource<T>(string url, bool previewApi = false, [CallerMemberName] string caller = null)
@@ -57,15 +57,15 @@ namespace NuKeeper.AzureDevOps
             var fullUrl = BuildAzureDevOpsUri(url, previewApi);
             _logger.Detailed($"{caller}: Requesting {fullUrl}");
 
-            var response = await _client.GetAsync(fullUrl);
-            return await HandleResponse<T>(response, caller);
+            var response = await _client.GetAsync(fullUrl).ConfigureAwait(false);
+            return await HandleResponse<T>(response, caller).ConfigureAwait(false);
         }
 
         private async Task<T> HandleResponse<T>(HttpResponseMessage response, [CallerMemberName] string caller = null)
         {
             string msg;
 
-            var responseBody = await response.Content.ReadAsStringAsync();
+            var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -173,19 +173,19 @@ namespace NuKeeper.AzureDevOps
         public async Task<PullRequest> CreatePullRequest(PRRequest request, string projectName, string azureRepositoryId)
         {
             var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
-            return await PostResource<PullRequest>($"{projectName}/_apis/git/repositories/{azureRepositoryId}/pullrequests", content);
+            return await PostResource<PullRequest>($"{projectName}/_apis/git/repositories/{azureRepositoryId}/pullrequests", content).ConfigureAwait(false);
         }
 
         public async Task<LabelResource> CreatePullRequestLabel(LabelRequest request, string projectName, string azureRepositoryId, int pullRequestId)
         {
             var labelContent = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
-            return await PostResource<LabelResource>($"{projectName}/_apis/git/repositories/{azureRepositoryId}/pullRequests/{pullRequestId}/labels", labelContent, true);
+            return await PostResource<LabelResource>($"{projectName}/_apis/git/repositories/{azureRepositoryId}/pullRequests/{pullRequestId}/labels", labelContent, true).ConfigureAwait(false);
         }
 
         public async Task<PullRequest> SetAutoComplete(PRRequest request, string projectName, string azureRepositoryId, int pullRequestId)
         {
             var autoCompleteContent = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
-            return await PatchResource<PullRequest>($"{projectName}/_apis/git/repositories/{azureRepositoryId}/pullRequests/{pullRequestId}", autoCompleteContent);
+            return await PatchResource<PullRequest>($"{projectName}/_apis/git/repositories/{azureRepositoryId}/pullRequests/{pullRequestId}", autoCompleteContent).ConfigureAwait(false);
         }
         
         public async Task<IEnumerable<string>> GetGitRepositoryFileNames(string projectName, string azureRepositoryId)

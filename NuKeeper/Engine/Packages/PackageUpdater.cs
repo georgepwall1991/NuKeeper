@@ -100,19 +100,19 @@ namespace NuKeeper.Engine.Packages
         {
             _logger.Normal(UpdatesLogger.OldVersionsToBeUpdated(updates));
 
-            await git.Checkout(repository.DefaultBranch);
+            await git.Checkout(repository.DefaultBranch).ConfigureAwait(false);
 
             // branch
             var branchWithChanges = BranchNamer.MakeName(updates, settings.BranchSettings.BranchNameTemplate);
             _logger.Detailed($"Using branch name: '{branchWithChanges}'");
 
-            var ditCheckOut = await git.CheckoutNewBranch(branchWithChanges);
+            var ditCheckOut = await git.CheckoutNewBranch(branchWithChanges).ConfigureAwait(false);
             if (!ditCheckOut)
             {
-                await git.CheckoutRemoteToLocal(branchWithChanges);
+                await git.CheckoutRemoteToLocal(branchWithChanges).ConfigureAwait(false);
             }
 
-            var filteredUpdates = await _existingCommitFilter.Filter(git, updates, repository.DefaultBranch, branchWithChanges);
+            var filteredUpdates = await _existingCommitFilter.Filter(git, updates, repository.DefaultBranch, branchWithChanges).ConfigureAwait(false);
 
             foreach (var filtered in updates.Where(u => !filteredUpdates.Contains(u)))
             {
@@ -125,9 +125,9 @@ namespace NuKeeper.Engine.Packages
             {
                 var commitMessage = _collaborationFactory.CommitWorder.MakeCommitMessage(updateSet);
 
-                await _updateRunner.Update(updateSet, sources);
+                await _updateRunner.Update(updateSet, sources).ConfigureAwait(false);
 
-                await git.Commit(commitMessage);
+                await git.Commit(commitMessage).ConfigureAwait(false);
             }
 
             bool pullRequestCreated = false;
@@ -135,7 +135,7 @@ namespace NuKeeper.Engine.Packages
             // bug: pr might not have been created yet
             if (haveUpdates)
             {
-                await git.Push(repository.Remote, branchWithChanges);
+                await git.Push(repository.Remote, branchWithChanges).ConfigureAwait(false);
 
                 string qualifiedBranch;
                 if (!repository.IsFork) //check if we are on a fork, if so qualify the branch name
@@ -147,7 +147,7 @@ namespace NuKeeper.Engine.Packages
                     qualifiedBranch = repository.Push.Owner + ":" + branchWithChanges;
                 }
 
-                bool pullRequestExists = await _collaborationFactory.CollaborationPlatform.PullRequestExists(repository.Pull, qualifiedBranch, repository.DefaultBranch);
+                bool pullRequestExists = await _collaborationFactory.CollaborationPlatform.PullRequestExists(repository.Pull, qualifiedBranch, repository.DefaultBranch).ConfigureAwait(false);
 
                 if (!pullRequestExists)
                 {
@@ -156,7 +156,7 @@ namespace NuKeeper.Engine.Packages
 
                     var pullRequestRequest = new PullRequestRequest(qualifiedBranch, title, repository.DefaultBranch, settings.BranchSettings.DeleteBranchAfterMerge, settings.SourceControlServerSettings.Repository.SetAutoMerge) { Body = body };
 
-                    await _collaborationFactory.CollaborationPlatform.OpenPullRequest(repository.Pull, pullRequestRequest, settings.SourceControlServerSettings.Labels);
+                    await _collaborationFactory.CollaborationPlatform.OpenPullRequest(repository.Pull, pullRequestRequest, settings.SourceControlServerSettings.Labels).ConfigureAwait(false);
 
                     pullRequestCreated = true;
                 }
@@ -165,7 +165,7 @@ namespace NuKeeper.Engine.Packages
                     _logger.Normal($"A pull request already exists for {repository.DefaultBranch} <= {qualifiedBranch}");
                 }
             }
-            await git.Checkout(repository.DefaultBranch);
+            await git.Checkout(repository.DefaultBranch).ConfigureAwait(false);
             return (filteredUpdates.Count, pullRequestCreated);
         }
     }

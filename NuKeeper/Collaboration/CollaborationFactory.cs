@@ -47,7 +47,7 @@ namespace NuKeeper.Collaboration
         public async Task<ValidationResult> Initialise(Uri apiEndpoint, string token,
             ForkMode? forkModeFromSettings, Platform? platformFromSettings)
         {
-            var platformSettingsReader = await FindPlatformSettingsReader(platformFromSettings, apiEndpoint);
+            var platformSettingsReader = await FindPlatformSettingsReader(platformFromSettings, apiEndpoint).ConfigureAwait(false);
             if (platformSettingsReader != null)
             {
                 _platform = platformSettingsReader.Platform;

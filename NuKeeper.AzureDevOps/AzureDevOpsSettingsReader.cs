@@ -31,7 +31,7 @@ namespace NuKeeper.AzureDevOps
             // Is the specified folder already a git repository?
             if (repositoryUri.IsFile)
             {
-                repositoryUri = await repositoryUri.GetRemoteUriFromLocalRepo(_gitDriver, PlatformHost);
+                repositoryUri = await repositoryUri.GetRemoteUriFromLocalRepo(_gitDriver, PlatformHost).ConfigureAwait(false);
             }
 
             // Did we specify a Azure DevOps url?
@@ -106,14 +106,14 @@ namespace NuKeeper.AzureDevOps
             if (await _gitDriver.IsGitRepo(repositoryUri))
             {
                 // Check the origin remotes
-                var origin = await _gitDriver.GetRemoteForPlatform(repositoryUri, PlatformHost);
+                var origin = await _gitDriver.GetRemoteForPlatform(repositoryUri, PlatformHost).ConfigureAwait(false);
 
                 if (origin != null)
                 {
                     remoteInfo.LocalRepositoryUri = await _gitDriver.DiscoverRepo(localCopy); // Set to the folder, because we found a remote git repository
                     repositoryUri = origin.Url;
                     remoteInfo.WorkingFolder = localCopy;
-                    remoteInfo.BranchName = targetBranch ?? await _gitDriver.GetCurrentHead(remoteInfo.LocalRepositoryUri);
+                    remoteInfo.BranchName = targetBranch ?? await _gitDriver.GetCurrentHead(remoteInfo.LocalRepositoryUri).ConfigureAwait(false);
                     remoteInfo.RemoteName = origin.Name;
                 }
             }

@@ -24,7 +24,7 @@ namespace NuKeeper.Commands
             var fileSettings = FileSettingsCache.GetSettings();
             ApiEndpoint = Concat.FirstValue(ApiEndpoint, fileSettings.Api, "https://api.github.com");
 
-            var baseResult = await base.PopulateSettings(settings);
+            var baseResult = await base.PopulateSettings(settings).ConfigureAwait(false);
             if (!baseResult.IsSuccess)
             {
                 return baseResult;

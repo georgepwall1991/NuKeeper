@@ -72,7 +72,7 @@ namespace NuKeeper.Local
 
             if (write)
             {
-                await _updater.ApplyUpdates(sortedUpdates, folder, sources, settings);
+                await _updater.ApplyUpdates(sortedUpdates, folder, sources, settings).ConfigureAwait(false);
             }
         }
 

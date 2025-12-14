@@ -58,18 +58,18 @@ namespace NuKeeper.Local
                 return;
             }
 
-            await ApplyUpdates(filtered, workingFolder, sources);
+            await ApplyUpdates(filtered, workingFolder, sources).ConfigureAwait(false);
         }
 
         private async Task ApplyUpdates(IReadOnlyCollection<PackageUpdateSet> updates, IFolder workingFolder, NuGetSources sources)
         {
-            await _solutionRestore.CheckRestore(updates, workingFolder, sources);
+            await _solutionRestore.CheckRestore(updates, workingFolder, sources).ConfigureAwait(false);
 
             foreach (var update in updates)
             {
                 _logger.Minimal("Updating " + Description.ForUpdateSet(update));
 
-                await _updateRunner.Update(update, sources);
+                await _updateRunner.Update(update, sources).ConfigureAwait(false);
             }
         }
     }

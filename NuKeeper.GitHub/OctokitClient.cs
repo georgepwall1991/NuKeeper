@@ -71,14 +71,14 @@ namespace NuKeeper.GitHub
 
             return await ExceptionHandler(async () =>
             {
-                var user = await _client.User.Current();
+                var user = await _client.User.Current().ConfigureAwait(false);
 
-                var emails = await _client.User.Email.GetAll();
+                var emails = await _client.User.Email.GetAll().ConfigureAwait(false);
                 var primaryEmail = emails.FirstOrDefault(e => e.Primary);
 
                 _logger.Detailed($"Read github user '{user?.Login}'");
                 return new User(user?.Login, user?.Name, primaryEmail?.Email ?? user?.Email);
-            });
+            }).ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<Organization>> GetOrganizations()
@@ -87,13 +87,13 @@ namespace NuKeeper.GitHub
 
             return await ExceptionHandler(async () =>
             {
-                var githubOrgs = await _client.Organization.GetAll();
+                var githubOrgs = await _client.Organization.GetAll().ConfigureAwait(false);
                 _logger.Normal($"Read {githubOrgs.Count} organisations");
 
                 return githubOrgs
                     .Select(org => new Organization(org.Name ?? org.Login))
                     .ToList();
-            });
+            }).ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<Repository>> GetRepositoriesForOrganisation(string organisationName)
@@ -102,10 +102,10 @@ namespace NuKeeper.GitHub
 
             return await ExceptionHandler(async () =>
             {
-                var repos = await _client.Repository.GetAllForOrg(organisationName);
+                var repos = await _client.Repository.GetAllForOrg(organisationName).ConfigureAwait(false);
                 _logger.Normal($"Read {repos.Count} repos for org '{organisationName}'");
                 return repos.Select(repo => new GitHubRepository(repo)).ToList();
-            });
+            }).ConfigureAwait(false);
         }
 
         public async Task<Repository> GetUserRepository(string userName, string repositoryName)
@@ -118,7 +118,7 @@ namespace NuKeeper.GitHub
             {
                 try
                 {
-                    var result = await _client.Repository.Get(userName, repositoryName);
+                    var result = await _client.Repository.Get(userName, repositoryName).ConfigureAwait(false);
                     _logger.Normal($"User fork found at {result.GitUrl} for {result.Owner.Login}");
                     return new GitHubRepository(result);
                 }
@@ -127,7 +127,7 @@ namespace NuKeeper.GitHub
                     _logger.Detailed("User fork not found");
                     return null;
                 }
-            });
+            }).ConfigureAwait(false);
         }
 
         public async Task<Repository> MakeUserFork(string owner, string repositoryName)
@@ -138,10 +138,10 @@ namespace NuKeeper.GitHub
 
             return await ExceptionHandler(async () =>
             {
-                var result = await _client.Repository.Forks.Create(owner, repositoryName, new NewRepositoryFork());
+                var result = await _client.Repository.Forks.Create(owner, repositoryName, new NewRepositoryFork()).ConfigureAwait(false);
                 _logger.Normal($"User fork created at {result.GitUrl} for {result.Owner.Login}");
                 return new GitHubRepository(result);
-            });
+            }).ConfigureAwait(false);
         }
 
         public async Task<bool> RepositoryBranchExists(string userName, string repositoryName, string branchName)
@@ -152,7 +152,7 @@ namespace NuKeeper.GitHub
             {
                 try
                 {
-                    await _client.Repository.Branch.Get(userName, repositoryName, branchName);
+                    await _client.Repository.Branch.Get(userName, repositoryName, branchName).ConfigureAwait(false);
                     _logger.Detailed($"Branch found for {userName} / {repositoryName} / {branchName}");
                     return true;
                 }
@@ -161,7 +161,7 @@ namespace NuKeeper.GitHub
                     _logger.Detailed($"No branch found for {userName} / {repositoryName} / {branchName}");
                     return false;
                 }
-            });
+            }).ConfigureAwait(false);
         }
 
         public async Task<bool> PullRequestExists(ForkData target, string headBranch, string baseBranch)
@@ -183,7 +183,7 @@ namespace NuKeeper.GitHub
                 var pullReqList = await _client.PullRequest.GetAllForRepository(target.Owner, target.Name, prRequest).ConfigureAwait(false);
 
                 return pullReqList.Any(pr => pr.Base.Ref.EndsWith(baseBranch, StringComparison.InvariantCultureIgnoreCase));
-            });
+            }).ConfigureAwait(false);
         }
 
         public async Task OpenPullRequest(ForkData target, PullRequestRequest request, IEnumerable<string> labels)
@@ -195,12 +195,12 @@ namespace NuKeeper.GitHub
                 _logger.Normal($"Making PR onto '{_apiBase} {target.Owner}/{target.Name} from {request.Head}");
                 _logger.Detailed($"PR title: {request.Title}");
 
-                var createdPullRequest = await _client.PullRequest.Create(target.Owner, target.Name, new NewPullRequest(request.Title, request.Head, request.BaseRef) { Body = request.Body });
+                var createdPullRequest = await _client.PullRequest.Create(target.Owner, target.Name, new NewPullRequest(request.Title, request.Head, request.BaseRef) { Body = request.Body }).ConfigureAwait(false);
 
-                await AddLabelsToIssue(target, createdPullRequest.Number, labels);
+                await AddLabelsToIssue(target, createdPullRequest.Number, labels).ConfigureAwait(false);
 
                 return Task.CompletedTask;
-            });
+            }).ConfigureAwait(false);
         }
 
         public async Task<SearchCodeResult> Search(SearchCodeRequest search)
@@ -221,9 +221,9 @@ namespace NuKeeper.GitHub
                         Extensions = search.Extensions,
                         In = new[] { CodeInQualifier.Path },
                         PerPage = search.PerPage
-                    });
+                    }).ConfigureAwait(false);
                 return new SearchCodeResult(result.TotalCount);
-            });
+            }).ConfigureAwait(false);
         }
 
         private async Task AddLabelsToIssue(ForkData target, int issueNumber, IEnumerable<string> labels)
@@ -241,7 +241,7 @@ namespace NuKeeper.GitHub
                 try
                 {
                     await _client.Issue.Labels.AddToIssue(target.Owner, target.Name, issueNumber,
-                        labelsToApply);
+                        labelsToApply).ConfigureAwait(false);
 
                 }
                 catch (ApiException ex)
@@ -255,7 +255,7 @@ namespace NuKeeper.GitHub
         {
             try
             {
-                return await funcToCheck();
+                return await funcToCheck().ConfigureAwait(false);
             }
             catch (ApiException ex)
             {

@@ -21,7 +21,7 @@ namespace NuKeeper.Git
 
         public async Task<bool> IsGitRepo(Uri repositoryUri)
         {
-            var discovered = await DiscoverRepo(repositoryUri);
+            var discovered = await DiscoverRepo(repositoryUri).ConfigureAwait(false);
             if (discovered == null)
             {
                 return false;
@@ -104,7 +104,7 @@ namespace NuKeeper.Git
 
         public async Task<GitRemote> GetRemoteForPlatform(Uri repositoryUri, string platformHost)
         {
-            var remotes = await GetRemotes(repositoryUri);
+            var remotes = await GetRemotes(repositoryUri).ConfigureAwait(false);
             return remotes
                 .FirstOrDefault(rm => rm.Url.Host.Contains(platformHost, StringComparison.OrdinalIgnoreCase));
         }

@@ -112,8 +112,9 @@ namespace NuKeeper
         }
 
         private static Registration[] RegisterMultipleSingletons<T>(Container container, Assembly[] assemblies)
+            where T : class
         {
-            var types = container.GetTypesToRegister(typeof(T), assemblies);
+            var types = container.GetTypesToRegister<T>(assemblies);
 
             return (from type in types
                     select Lifestyle.Singleton.CreateRegistration(type, container)

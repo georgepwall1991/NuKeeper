@@ -32,7 +32,7 @@ namespace NuKeeper
 
             try
             {
-                return await app.ExecuteAsync(args);
+                return await app.ExecuteAsync(args).ConfigureAwait(false);
             }
             catch (CommandParsingException cpe)
             {

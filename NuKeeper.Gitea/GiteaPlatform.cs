@@ -35,7 +35,7 @@ namespace NuKeeper.Gitea
 
         public async Task<User> GetCurrentUser()
         {
-            var user = await _client.GetCurrentUser();
+            var user = await _client.GetCurrentUser().ConfigureAwait(false);
             return new User(user.Login, user.FullName, user.Email);
         }
 
@@ -46,7 +46,7 @@ namespace NuKeeper.Gitea
                 throw new ArgumentNullException(nameof(target));
             }
 
-            var result = await _client.GetPullRequests(target.Owner, target.Name, headBranch, baseBranch);
+            var result = await _client.GetPullRequests(target.Owner, target.Name, headBranch, baseBranch).ConfigureAwait(false);
 
             return result.Any();
         }
@@ -78,18 +78,18 @@ namespace NuKeeper.Gitea
                 DueDate = DateTime.Now.AddDays(7)
             };
 
-            await _client.OpenPullRequest(projectName, repositoryName, mergeRequest);
+            await _client.OpenPullRequest(projectName, repositoryName, mergeRequest).ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<Organization>> GetOrganizations()
         {
-            var orgas = await _client.GetOrganizations();
+            var orgas = await _client.GetOrganizations().ConfigureAwait(false);
             return orgas?.Select(x => MapOrganization(x)).ToList() ?? new List<Organization>();
         }
 
         public async Task<IReadOnlyList<Repository>> GetRepositoriesForOrganisation(string organizationName)
         {
-            var repos = await _client.GetOrganizationRepositories(organizationName);
+            var repos = await _client.GetOrganizationRepositories(organizationName).ConfigureAwait(false);
             return repos?.Select(x => MapRepository(x)).ToList() ?? new List<Repository>();
         }
 
@@ -97,7 +97,7 @@ namespace NuKeeper.Gitea
         {
             try
             {
-                var repo = await _client.GetRepository(userName, repositoryName);
+                var repo = await _client.GetRepository(userName, repositoryName).ConfigureAwait(false);
                 return MapRepository(repo);
             }
             catch (NuKeeperException)
@@ -109,7 +109,7 @@ namespace NuKeeper.Gitea
 
         public async Task<Repository> MakeUserFork(string owner, string repositoryName)
         {
-            var fork = await _client.ForkRepository(owner, repositoryName, null);
+            var fork = await _client.ForkRepository(owner, repositoryName, null).ConfigureAwait(false);
             return MapRepository(fork);
         }
 
@@ -122,7 +122,7 @@ namespace NuKeeper.Gitea
         /// <returns>true if exist</returns>
         public async Task<bool> RepositoryBranchExists(string userName, string repositoryName, string branchName)
         {
-            var result = await _client.GetRepositoryBranch(userName, repositoryName, branchName);
+            var result = await _client.GetRepositoryBranch(userName, repositoryName, branchName).ConfigureAwait(false);
             return result != null;
         }
 

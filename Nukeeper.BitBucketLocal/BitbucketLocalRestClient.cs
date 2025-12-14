@@ -43,15 +43,15 @@ namespace NuKeeper.BitBucketLocal
         private async Task<T> GetResourceOrEmpty<T>(string url, [CallerMemberName] string caller = null)
         {
             _logger.Detailed($"Getting from BitBucketLocal url {url}");
-            var response = await _client.GetAsync(url);
-            return await HandleResponse<T>(response, caller);
+            var response = await _client.GetAsync(url).ConfigureAwait(false);
+            return await HandleResponse<T>(response, caller).ConfigureAwait(false);
         }
 
         private async Task<T> HandleResponse<T>(HttpResponseMessage response, [CallerMemberName] string caller = null)
         {
             string msg;
 
-            var responseBody = await response.Content.ReadAsStringAsync();
+            var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -133,9 +133,9 @@ namespace NuKeeper.BitBucketLocal
             var requestJson = JsonConvert.SerializeObject(pullReq, Formatting.None, JsonSerializerSettings);
             var requestBody = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
-            var response = await _client.PostAsync($@"{ApiPath}/projects/{projectName}/repos/{repositoryName}/pull-requests", requestBody);
+            var response = await _client.PostAsync($@"{ApiPath}/projects/{projectName}/repos/{repositoryName}/pull-requests", requestBody).ConfigureAwait(false);
 
-            return await HandleResponse<PullRequest>(response, caller);
+            return await HandleResponse<PullRequest>(response, caller).ConfigureAwait(false);
         }
 
         public async Task<IEnumerable<PullRequestReviewer>> GetBitBucketReviewers(string projectName, string repositoryName, int repositoryId, string head, string baseRef, [CallerMemberName] string caller = null)

@@ -36,7 +36,7 @@ namespace NuKeeper.Engine.Packages
             {
                 var filtered = new List<PackageUpdateSet>();
                 // commit messages are compared without whitespace because the system tends to add ws.
-                var commitMessages = await git.GetNewCommitMessages(baseBranch, headBranch);
+                var commitMessages = await git.GetNewCommitMessages(baseBranch, headBranch).ConfigureAwait(false);
                 var compactCommitMessages = commitMessages.Select(m => new string(m.Where(c => !char.IsWhiteSpace(c)).ToArray()));
 
                 foreach (var update in updates)

@@ -34,7 +34,7 @@ namespace NuKeeper.Abstractions.Formats
             if (await discoveryDriver.IsGitRepo(repositoryUri))
             {
                 // Check the origin remotes
-                var origin = await discoveryDriver.GetRemoteForPlatform(repositoryUri, shouldMatchTo);
+                var origin = await discoveryDriver.GetRemoteForPlatform(repositoryUri, shouldMatchTo).ConfigureAwait(false);
 
                 if (origin != null)
                 {

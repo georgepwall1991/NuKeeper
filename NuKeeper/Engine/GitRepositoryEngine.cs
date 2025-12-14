@@ -60,7 +60,7 @@ namespace NuKeeper.Engine
 
             DefaultCredentialServiceUtility.SetupDefaultCredentialService(_nugetLogger, true);
 
-            var repositoryData = await BuildGitRepositorySpec(repository, credentials.Username);
+            var repositoryData = await BuildGitRepositorySpec(repository, credentials.Username).ConfigureAwait(false);
             if (repositoryData == null)
             {
                 return 0;
@@ -72,7 +72,7 @@ namespace NuKeeper.Engine
             // otherwise it's ok to work locally, and check there
             if (!(settings.SourceControlServerSettings.Scope == ServerScope.Repository || repository.IsLocalRepo))
             {
-                var remoteRepoContainsDotNet = await _repositoryFilter.ContainsDotNetProjects(repository);
+                var remoteRepoContainsDotNet = await _repositoryFilter.ContainsDotNetProjects(repository).ConfigureAwait(false);
                 if (!remoteRepoContainsDotNet)
                 {
                     return 0;
@@ -111,7 +111,7 @@ namespace NuKeeper.Engine
 
             try
             {
-                return await _repositoryUpdater.Run(git, repositoryData, settings);
+                return await _repositoryUpdater.Run(git, repositoryData, settings).ConfigureAwait(false);
             }
             finally
             {
@@ -127,7 +127,7 @@ namespace NuKeeper.Engine
             string userName)
         {
             var pullFork = new ForkData(repository.RepositoryUri, repository.RepositoryOwner, repository.RepositoryName);
-            var pushFork = await _collaborationFactory.ForkFinder.FindPushFork(userName, pullFork);
+            var pushFork = await _collaborationFactory.ForkFinder.FindPushFork(userName, pullFork).ConfigureAwait(false);
 
             if (pushFork == null)
             {

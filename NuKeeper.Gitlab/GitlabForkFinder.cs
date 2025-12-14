@@ -34,13 +34,13 @@ namespace NuKeeper.Gitlab
                 throw new ArgumentNullException(nameof(fallbackFork));
             }
 
-            return await FindUpstreamRepoOnly(fallbackFork);
+            return await FindUpstreamRepoOnly(fallbackFork).ConfigureAwait(false);
         }
 
         private async Task<ForkData> FindUpstreamRepoOnly(ForkData pullFork)
         {
             // Only want to pull and push from the same origin repo.
-            var canUseOriginRepo = await IsPushableRepo(pullFork);
+            var canUseOriginRepo = await IsPushableRepo(pullFork).ConfigureAwait(false);
             if (canUseOriginRepo)
             {
                 _logger.Normal($"Using upstream fork as push, for project {pullFork.Owner} at {pullFork.Uri}");
@@ -58,7 +58,7 @@ namespace NuKeeper.Gitlab
 
         private async Task<bool> IsPushableRepo(ForkData originFork)
         {
-            var originRepo = await _collaborationPlatform.GetUserRepository(originFork.Owner, originFork.Name);
+            var originRepo = await _collaborationPlatform.GetUserRepository(originFork.Owner, originFork.Name).ConfigureAwait(false);
             return originRepo?.UserPermissions.Push == true;
         }
     }

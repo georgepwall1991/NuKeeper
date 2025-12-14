@@ -106,7 +106,7 @@ namespace NuKeeper.Update.Process
                 throw new ArgumentNullException(nameof(currentPackage));
             }
 
-            await Invoke(currentPackage.Path.Info, allSources);
+            await Invoke(currentPackage.Path.Info, allSources).ConfigureAwait(false);
         }
     }
 }

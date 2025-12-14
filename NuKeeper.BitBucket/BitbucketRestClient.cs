@@ -37,9 +37,9 @@ namespace NuKeeper.BitBucket
         private async Task<T> GetResourceOrEmpty<T>(string url)
         {
             _logger.Detailed($"Getting from BitBucket url {url}");
-            var response = await _client.GetAsync(url);
+            var response = await _client.GetAsync(url).ConfigureAwait(false);
 
-            var responseBody = await response.Content.ReadAsStringAsync();
+            var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -93,7 +93,7 @@ namespace NuKeeper.BitBucket
             var response = await _client.PostAsync(($"repositories/{account}/{repositoryName}/pullrequests"),
                  new StringContent(JsonConvert.SerializeObject(request, Formatting.None, JsonSerializerSettings), Encoding.UTF8, "application/json"));
 
-            var result = await response.Content.ReadAsStringAsync();
+            var result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var resource = JsonConvert.DeserializeObject<PullRequest>(result);
             return resource;
         }

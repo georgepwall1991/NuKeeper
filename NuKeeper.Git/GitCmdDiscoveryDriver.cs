@@ -39,7 +39,7 @@ namespace NuKeeper.Git
                 throw new ArgumentNullException(nameof(repositoryUri));
             }
 
-            var result = await StartGitProcess("config --get remote.origin.url", true, repositoryUri.LocalPath);
+            var result = await StartGitProcess("config --get remote.origin.url", true, repositoryUri.LocalPath).ConfigureAwait(false);
             return new Uri(result);
         }
 
@@ -50,7 +50,7 @@ namespace NuKeeper.Git
                 throw new ArgumentNullException(nameof(repositoryUri));
             }
 
-            var getBranchHead = await StartGitProcess($"symbolic-ref -q --short HEAD", true, repositoryUri.LocalPath);
+            var getBranchHead = await StartGitProcess($"symbolic-ref -q --short HEAD", true, repositoryUri.LocalPath).ConfigureAwait(false);
             return string.IsNullOrEmpty(getBranchHead) ?
                 await StartGitProcess($"rev-parse HEAD", true, repositoryUri.LocalPath) :
                 getBranchHead;
@@ -58,7 +58,7 @@ namespace NuKeeper.Git
 
         public async Task<GitRemote> GetRemoteForPlatform(Uri repositoryUri, string platformHost)
         {
-            var remotes = await GetRemotes(repositoryUri);
+            var remotes = await GetRemotes(repositoryUri).ConfigureAwait(false);
             return remotes.FirstOrDefault(rm => rm.Url.Host.Contains(platformHost, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -74,7 +74,7 @@ namespace NuKeeper.Git
                 return Enumerable.Empty<GitRemote>();
             }
 
-            var result = await StartGitProcess("remote -v", true, repositoryUri.LocalPath);
+            var result = await StartGitProcess("remote -v", true, repositoryUri.LocalPath).ConfigureAwait(false);
 
             // result should look like "origin\thttps://github.com/nukeeper/NuKeeper.git (fetch)\norigin\thttps://github.com/nukeeper/NuKeeper.git (push)"
             if (!string.IsNullOrWhiteSpace(result))
@@ -99,7 +99,7 @@ namespace NuKeeper.Git
 
         public async Task<bool> IsGitRepo(Uri repositoryUri)
         {
-            var discovered = await DiscoverRepo(repositoryUri);
+            var discovered = await DiscoverRepo(repositoryUri).ConfigureAwait(false);
             if (discovered == null)
             {
                 return false;
@@ -111,7 +111,7 @@ namespace NuKeeper.Git
         internal async Task<string> StartGitProcess(string arguments, bool ensureSuccess, string workingFolder)
         {
             var process = new ExternalProcess(_logger);
-            var output = await process.Run(workingFolder, _pathGit, arguments, ensureSuccess);
+            var output = await process.Run(workingFolder, _pathGit, arguments, ensureSuccess).ConfigureAwait(false);
             return output.Output.TrimEnd(Environment.NewLine.ToCharArray());
         }
 

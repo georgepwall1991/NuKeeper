@@ -44,19 +44,19 @@ namespace NuKeeper.Git
 
         public async Task Checkout(string branchName)
         {
-            await StartGitProcess($"checkout {branchName}", false);
+            await StartGitProcess($"checkout {branchName}", false).ConfigureAwait(false);
         }
 
         public async Task CheckoutRemoteToLocal(string branchName)
         {
-            await StartGitProcess($"checkout -b {branchName} origin/{branchName}", false);
+            await StartGitProcess($"checkout -b {branchName} origin/{branchName}", false).ConfigureAwait(false);
         }
 
         public async Task<bool> CheckoutNewBranch(string branchName)
         {
             try
             {
-                await StartGitProcess($"checkout -b {branchName}", true);
+                await StartGitProcess($"checkout -b {branchName}", true).ConfigureAwait(false);
                 return true;
             } catch
             {
@@ -66,7 +66,7 @@ namespace NuKeeper.Git
 
         public async Task Clone(Uri pullEndpoint)
         {
-            await Clone(pullEndpoint, null);
+            await Clone(pullEndpoint, null).ConfigureAwait(false);
         }
 
         public async Task Clone(Uri pullEndpoint, string branchName)
@@ -80,12 +80,12 @@ namespace NuKeeper.Git
         public async Task Commit(string message)
         {
             _logger.Detailed($"Git commit with message '{message}'");
-            await StartGitProcess($"commit -a -m \"{message}\"", true);
+            await StartGitProcess($"commit -a -m \"{message}\"", true).ConfigureAwait(false);
         }
 
         public async Task<string> GetCurrentHead()
         {
-            var getBranchHead = await StartGitProcess($"symbolic-ref -q --short HEAD", true);
+            var getBranchHead = await StartGitProcess($"symbolic-ref -q --short HEAD", true).ConfigureAwait(false);
             return string.IsNullOrEmpty(getBranchHead) ?
                 await StartGitProcess($"rev-parse HEAD", true) :
                 getBranchHead;
@@ -94,13 +94,13 @@ namespace NuKeeper.Git
         public async Task Push(string remoteName, string branchName)
         {
             _logger.Detailed($"Git push to {remoteName}/{branchName}");
-            await StartGitProcess($"push {remoteName} {branchName}", true);
+            await StartGitProcess($"push {remoteName} {branchName}", true).ConfigureAwait(false);
         }
 
         private  async Task<string> StartGitProcess(string arguments, bool ensureSuccess)
         {
             var process = new ExternalProcess(_logger);
-            var output = await process.Run(WorkingFolder.FullPath, _pathGit, arguments, ensureSuccess);
+            var output = await process.Run(WorkingFolder.FullPath, _pathGit, arguments, ensureSuccess).ConfigureAwait(false);
             return output.Output.TrimEnd(Environment.NewLine.ToCharArray());
         }
 
@@ -116,7 +116,7 @@ namespace NuKeeper.Git
 
         public async Task<IReadOnlyCollection<string>> GetNewCommitMessages(string baseBranchName, string headBranchName)
         {
-            var commitlog = await StartGitProcess($"log --oneline --no-decorate --right-only {baseBranchName}...{headBranchName}", true);
+            var commitlog = await StartGitProcess($"log --oneline --no-decorate --right-only {baseBranchName}...{headBranchName}", true).ConfigureAwait(false);
             var commitMsgWithId = commitlog
                 .Split(Environment.NewLine.ToCharArray())
                 .Select(m=>m.Trim())

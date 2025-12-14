@@ -40,14 +40,14 @@ namespace NuKeeper.Collaboration
             _logger.Detailed($"{Now()}: Started");
             _folderFactory.DeleteExistingTempDirs();
 
-            var user = await _collaborationFactory.CollaborationPlatform.GetCurrentUser();
+            var user = await _collaborationFactory.CollaborationPlatform.GetCurrentUser().ConfigureAwait(false);
             var credentials = new GitUsernamePasswordCredentials
             {
                 Username = user.Login,
                 Password = _collaborationFactory.Settings.Token
             };
 
-            var repositories = await _collaborationFactory.RepositoryDiscovery.GetRepositories(settings.SourceControlServerSettings);
+            var repositories = await _collaborationFactory.RepositoryDiscovery.GetRepositories(settings.SourceControlServerSettings).ConfigureAwait(false);
 
             var reposUpdated = 0;
             (bool Happened, Exception Value) unhandledEx = (false, null);

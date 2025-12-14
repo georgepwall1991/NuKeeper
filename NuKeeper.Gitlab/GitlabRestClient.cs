@@ -32,7 +32,7 @@ namespace NuKeeper.Gitlab
         // GET /user
         public async Task<Model.User> GetCurrentUser()
         {
-            return await GetResource<Model.User>("user");
+            return await GetResource<Model.User>("user").ConfigureAwait(false);
         }
 
         // https://docs.gitlab.com/ee/api/projects.html#get-single-project
@@ -40,7 +40,7 @@ namespace NuKeeper.Gitlab
         public async Task<Model.Project> GetProject(string projectName, string repositoryName)
         {
             var encodedProjectName = HttpUtility.UrlEncode($"{projectName}/{repositoryName}");
-            return await GetResource<Model.Project>($"projects/{encodedProjectName}");
+            return await GetResource<Model.Project>($"projects/{encodedProjectName}").ConfigureAwait(false);
         }
 
         // https://docs.gitlab.com/ee/api/branches.html#get-single-repository-branch
@@ -93,17 +93,17 @@ namespace NuKeeper.Gitlab
             var fullUrl = new Uri(url, UriKind.Relative);
             _logger.Detailed($"{caller}: Requesting {fullUrl}");
 
-            var response = await _client.GetAsync(fullUrl);
-            return await HandleResponse(response, customErrorHandling, caller);
+            var response = await _client.GetAsync(fullUrl).ConfigureAwait(false);
+            return await HandleResponse(response, customErrorHandling, caller).ConfigureAwait(false);
         }
 
         private async Task<T> PostResource<T>(string url, HttpContent content, Func<HttpStatusCode, Result<T>> customErrorHandling = null, [CallerMemberName] string caller = null)
         {
             _logger.Detailed($"{caller}: Requesting {url}");
 
-            var response = await _client.PostAsync(url, content);
+            var response = await _client.PostAsync(url, content).ConfigureAwait(false);
 
-            return await HandleResponse(response, customErrorHandling, caller);
+            return await HandleResponse(response, customErrorHandling, caller).ConfigureAwait(false);
         }
 
         private async Task<T> HandleResponse<T>(HttpResponseMessage response,
@@ -112,7 +112,7 @@ namespace NuKeeper.Gitlab
         {
             string msg;
 
-            var responseBody = await response.Content.ReadAsStringAsync();
+            var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {

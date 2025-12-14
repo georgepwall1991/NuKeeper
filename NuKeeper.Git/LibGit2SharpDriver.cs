@@ -44,7 +44,7 @@ namespace NuKeeper.Git
 
         public async Task Clone(Uri pullEndpoint)
         {
-            await Clone(pullEndpoint, null);
+            await Clone(pullEndpoint, null).ConfigureAwait(false);
         }
 
         public Task Clone(Uri pullEndpoint, string branchName)

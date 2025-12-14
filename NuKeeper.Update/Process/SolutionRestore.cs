@@ -26,7 +26,7 @@ namespace NuKeeper.Update.Process
 
             if (AnyProjectRequiresNuGetRestore(targetUpdates))
             {
-                await Restore(workingFolder, sources);
+                await Restore(workingFolder, sources).ConfigureAwait(false);
             }
         }
 
@@ -36,7 +36,7 @@ namespace NuKeeper.Update.Process
 
             foreach (var sln in solutionFiles)
             {
-                await _fileRestoreCommand.Invoke(sln, sources);
+                await _fileRestoreCommand.Invoke(sln, sources).ConfigureAwait(false);
             }
         }
 

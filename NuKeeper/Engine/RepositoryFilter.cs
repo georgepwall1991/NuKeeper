@@ -42,7 +42,7 @@ namespace NuKeeper.Engine
 
             try
             {
-                var result = await _collaborationFactory.CollaborationPlatform.Search(searchCodeRequest);
+                var result = await _collaborationFactory.CollaborationPlatform.Search(searchCodeRequest).ConfigureAwait(false);
                 if (result.TotalCount <= 0)
                 {
                     _logger.Detailed(

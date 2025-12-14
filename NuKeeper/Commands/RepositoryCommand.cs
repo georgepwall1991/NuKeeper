@@ -56,16 +56,16 @@ namespace NuKeeper.Commands
                 return ValidationResult.Failure($"Bad repository URI: '{RepositoryUri}'");
             }
 
-            ISettingsReader reader = await TryGetSettingsReader(repoUri, Platform);
+            ISettingsReader reader = await TryGetSettingsReader(repoUri, Platform).ConfigureAwait(false);
 
             if (reader == null)
             {
                 return ValidationResult.Failure($"Unable to work out which platform to use {RepositoryUri} could not be matched");
             }
 
-            settings.SourceControlServerSettings.Repository = await reader.RepositorySettings(repoUri, SetAutoMerge ?? false, TargetBranch);
+            settings.SourceControlServerSettings.Repository = await reader.RepositorySettings(repoUri, SetAutoMerge ?? false, TargetBranch).ConfigureAwait(false);
 
-            var baseResult = await base.PopulateSettings(settings);
+            var baseResult = await base.PopulateSettings(settings).ConfigureAwait(false);
             if (!baseResult.IsSuccess)
             {
                 return baseResult;

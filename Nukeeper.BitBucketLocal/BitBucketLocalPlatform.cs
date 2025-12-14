@@ -43,10 +43,10 @@ namespace NuKeeper.BitBucketLocal
                 throw new ArgumentNullException(nameof(target));
             }
 
-            var repositories = await _client.GetGitRepositories(target.Owner);
+            var repositories = await _client.GetGitRepositories(target.Owner).ConfigureAwait(false);
             var targetRepository = repositories.FirstOrDefault(x => x.Name.Equals(target.Name, StringComparison.InvariantCultureIgnoreCase));
 
-            var pullRequests = await _client.GetPullRequests(target.Owner, targetRepository.Name, headBranch, baseBranch);
+            var pullRequests = await _client.GetPullRequests(target.Owner, targetRepository.Name, headBranch, baseBranch).ConfigureAwait(false);
 
             return pullRequests.Any();
         }
@@ -63,10 +63,10 @@ namespace NuKeeper.BitBucketLocal
                 throw new ArgumentNullException(nameof(target));
             }
 
-            var repositories = await _client.GetGitRepositories(target.Owner);
+            var repositories = await _client.GetGitRepositories(target.Owner).ConfigureAwait(false);
             var targetRepository = repositories.FirstOrDefault(x => x.Name.Equals(target.Name, StringComparison.InvariantCultureIgnoreCase));
 
-            var reviewers = await _client.GetBitBucketReviewers(target.Owner, targetRepository.Name, targetRepository.Id, request.Head, request.BaseRef);
+            var reviewers = await _client.GetBitBucketReviewers(target.Owner, targetRepository.Name, targetRepository.Id, request.Head, request.BaseRef).ConfigureAwait(false);
 
             var pullReq = new PullRequest
             {
@@ -83,12 +83,12 @@ namespace NuKeeper.BitBucketLocal
                 Reviewers = reviewers.ToList()
             };
 
-            await _client.CreatePullRequest(pullReq, target.Owner, targetRepository.Name);
+            await _client.CreatePullRequest(pullReq, target.Owner, targetRepository.Name).ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<Organization>> GetOrganizations()
         {
-            var projects = await _client.GetProjects();
+            var projects = await _client.GetProjects().ConfigureAwait(false);
             return projects
                 .Select(project => new Organization(project.Name))
                 .ToList();
@@ -96,7 +96,7 @@ namespace NuKeeper.BitBucketLocal
 
         public async Task<IReadOnlyList<Repository>> GetRepositoriesForOrganisation(string projectName)
         {
-            var repos = await _client.GetGitRepositories(projectName);
+            var repos = await _client.GetGitRepositories(projectName).ConfigureAwait(false);
 
             return repos.Select(repo =>
                     new Repository(repo.Name, false,
@@ -109,7 +109,7 @@ namespace NuKeeper.BitBucketLocal
         public async Task<Repository> GetUserRepository(string projectName, string repositoryName)
         {
             var sanitisedRepositoryName = SanitizeRepositoryName(repositoryName);
-            var repos = await GetRepositoriesForOrganisation(projectName);
+            var repos = await GetRepositoriesForOrganisation(projectName).ConfigureAwait(false);
             return repos.Single(x => string.Equals(SanitizeRepositoryName(x.Name), sanitisedRepositoryName, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -130,7 +130,7 @@ namespace NuKeeper.BitBucketLocal
 
         public async Task<bool> RepositoryBranchExists(string projectName, string repositoryName, string branchName)
         {
-            var branches = await _client.GetGitRepositoryBranches(projectName, repositoryName);
+            var branches = await _client.GetGitRepositoryBranches(projectName, repositoryName).ConfigureAwait(false);
 
             var count = branches.Count(x => x.DisplayId.Equals(branchName, StringComparison.OrdinalIgnoreCase));
             if (count > 0)

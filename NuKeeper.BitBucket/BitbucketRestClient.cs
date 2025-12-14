@@ -1,10 +1,13 @@
 using Newtonsoft.Json;
+using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.Logging;
 using NuKeeper.BitBucket.Models;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -34,43 +37,73 @@ namespace NuKeeper.BitBucket
             _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        private async Task<T> GetResourceOrEmpty<T>(string url)
+        private async Task<T> GetResource<T>(string url, [CallerMemberName] string caller = null)
         {
-            _logger.Detailed($"Getting from BitBucket url {url}");
+            _logger.Detailed($"{caller}: Getting from BitBucket url {url}");
             var response = await _client.GetAsync(url).ConfigureAwait(false);
+            return await HandleResponse<T>(response, caller).ConfigureAwait(false);
+        }
 
+        private async Task<T> HandleResponse<T>(HttpResponseMessage response, [CallerMemberName] string caller = null)
+        {
+            string msg;
             var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
                 _logger.Detailed($"Response {response.StatusCode} is not success, body:\n{responseBody}");
-                return default;
+
+                switch (response.StatusCode)
+                {
+                    case HttpStatusCode.Unauthorized:
+                        msg = $"{caller}: Unauthorised, ensure username and app password are correct";
+                        _logger.Error(msg);
+                        throw new NuKeeperException(msg);
+
+                    case HttpStatusCode.Forbidden:
+                        msg = $"{caller}: Forbidden, ensure user has appropriate permissions";
+                        _logger.Error(msg);
+                        throw new NuKeeperException(msg);
+
+                    default:
+                        msg = $"{caller}: Error {response.StatusCode}";
+                        _logger.Error(msg);
+                        throw new NuKeeperException(msg);
+                }
             }
 
-            return JsonConvert.DeserializeObject<T>(responseBody);
+            try
+            {
+                return JsonConvert.DeserializeObject<T>(responseBody);
+            }
+            catch (JsonException ex)
+            {
+                msg = $"{caller}: Failed to parse json to {typeof(T)}: {ex.Message}";
+                _logger.Error(msg);
+                throw new NuKeeperException(msg, ex);
+            }
         }
 
         public async Task<IEnumerable<ProjectInfo>> GetProjects(string account)
         {
-            var response = await GetResourceOrEmpty<IteratorBasedPage<ProjectInfo>>($"teams/{account}/projects/");
+            var response = await GetResource<IteratorBasedPage<ProjectInfo>>($"teams/{account}/projects/").ConfigureAwait(false);
             return response.values;
         }
 
         public async Task<IEnumerable<Repository>> GetGitRepositories(string account)
         {
-            var response = await GetResourceOrEmpty<IteratorBasedPage<Repository>>($"repositories/{account}");
+            var response = await GetResource<IteratorBasedPage<Repository>>($"repositories/{account}").ConfigureAwait(false);
             return response.values;
         }
 
         public async Task<Repository> GetGitRepository(string account, string repositoryName)
         {
-            var response = await GetResourceOrEmpty<Repository>($"repositories/{account}/{repositoryName}");
-            return response;
+            return await GetResource<Repository>($"repositories/{account}/{repositoryName}").ConfigureAwait(false);
         }
 
         public async Task<IEnumerable<Ref>> GetRepositoryRefs(string account, string repositoryId)
         {
-            var response = await GetResourceOrEmpty<IteratorBasedPage<Ref>>($"repositories/{account}/{repositoryId}/refs");
+            var response = await GetResource<IteratorBasedPage<Ref>>($"repositories/{account}/{repositoryId}/refs").ConfigureAwait(false);
             return response.values;
         }
 
@@ -83,19 +116,14 @@ namespace NuKeeper.BitBucket
         {
             var filter = $"state =\"open\" AND source.branch.name = \"{headBranch}\" AND destination.branch.name = \"{baseBranch}\"";
 
-            var response = await GetResourceOrEmpty<PullRequestsInfo>($"repositories/{account}/{repositoryName}/pullrequests?q={HttpUtility.UrlEncode(filter)}");
-
-            return response;
+            return await GetResource<PullRequestsInfo>($"repositories/{account}/{repositoryName}/pullrequests?q={HttpUtility.UrlEncode(filter)}").ConfigureAwait(false);
         }
 
-        public async Task<PullRequest> CreatePullRequest(string account, string repositoryName, PullRequest request)
+        public async Task<PullRequest> CreatePullRequest(string account, string repositoryName, PullRequest request, [CallerMemberName] string caller = null)
         {
-            var response = await _client.PostAsync(($"repositories/{account}/{repositoryName}/pullrequests"),
-                 new StringContent(JsonConvert.SerializeObject(request, Formatting.None, JsonSerializerSettings), Encoding.UTF8, "application/json"));
-
-            var result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var resource = JsonConvert.DeserializeObject<PullRequest>(result);
-            return resource;
+            var content = new StringContent(JsonConvert.SerializeObject(request, Formatting.None, JsonSerializerSettings), Encoding.UTF8, "application/json");
+            var response = await _client.PostAsync($"repositories/{account}/{repositoryName}/pullrequests", content).ConfigureAwait(false);
+            return await HandleResponse<PullRequest>(response, caller).ConfigureAwait(false);
         }
     }
 }

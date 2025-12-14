@@ -1,123 +1,123 @@
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.BitBucket.Models
 {
     public partial class Refs
     {
-        [JsonProperty("pagelen")]
+        [JsonPropertyName("pagelen")]
         public long Pagelen { get; set; }
 
-        [JsonProperty("values")]
+        [JsonPropertyName("values")]
         public List<Ref> Values { get; set; }
 
-        [JsonProperty("page")]
+        [JsonPropertyName("page")]
         public long Page { get; set; }
 
-        [JsonProperty("next")]
+        [JsonPropertyName("next")]
         public Uri Next { get; set; }
     }
 
     public partial class Ref
     {
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("links")]
+        [JsonPropertyName("links")]
         public ValueLinks Links { get; set; }
 
-        [JsonProperty("default_merge_strategy")]
+        [JsonPropertyName("default_merge_strategy")]
         public string DefaultMergeStrategy { get; set; }
 
-        [JsonProperty("merge_strategies")]
+        [JsonPropertyName("merge_strategies")]
         public List<string> MergeStrategies { get; set; }
 
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public string Type { get; set; }
 
-        [JsonProperty("target")]
+        [JsonPropertyName("target")]
         public Target Target { get; set; }
     }
 
     public partial class ValueLinks
     {
-        [JsonProperty("commits")]
+        [JsonPropertyName("commits")]
         public Commits Commits { get; set; }
 
-        [JsonProperty("self")]
+        [JsonPropertyName("self")]
         public Commits Self { get; set; }
 
-        [JsonProperty("html")]
+        [JsonPropertyName("html")]
         public Commits Html { get; set; }
     }
 
     public partial class Commits
     {
-        [JsonProperty("href")]
+        [JsonPropertyName("href")]
         public Uri Href { get; set; }
     }
 
     public partial class Target
     {
-        [JsonProperty("hash")]
+        [JsonPropertyName("hash")]
         public string Hash { get; set; }
 
-        [JsonProperty("repository")]
+        [JsonPropertyName("repository")]
         public Repository Repository { get; set; }
 
-        [JsonProperty("links")]
+        [JsonPropertyName("links")]
         public TargetLinks Links { get; set; }
 
-        [JsonProperty("author")]
+        [JsonPropertyName("author")]
         public Author Author { get; set; }
 
-        [JsonProperty("parents")]
+        [JsonPropertyName("parents")]
         public List<Parent> Parents { get; set; }
 
-        [JsonProperty("date")]
+        [JsonPropertyName("date")]
         public DateTimeOffset Date { get; set; }
 
-        [JsonProperty("message")]
+        [JsonPropertyName("message")]
         public string Message { get; set; }
 
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public string Type { get; set; }
     }
 
     public partial class UserLinks
     {
-        [JsonProperty("self")]
+        [JsonPropertyName("self")]
         public Commits Self { get; set; }
 
-        [JsonProperty("html")]
+        [JsonPropertyName("html")]
         public Commits Html { get; set; }
 
-        [JsonProperty("avatar")]
+        [JsonPropertyName("avatar")]
         public Commits Avatar { get; set; }
     }
 
     public partial class TargetLinks
     {
-        [JsonProperty("self")]
+        [JsonPropertyName("self")]
         public Commits Self { get; set; }
 
-        [JsonProperty("comments")]
+        [JsonPropertyName("comments")]
         public Commits Comments { get; set; }
 
-        [JsonProperty("patch", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("patch")]
         public Commits Patch { get; set; }
 
-        [JsonProperty("html")]
+        [JsonPropertyName("html")]
         public Commits Html { get; set; }
 
-        [JsonProperty("diff")]
+        [JsonPropertyName("diff")]
         public Commits Diff { get; set; }
 
-        [JsonProperty("approve")]
+        [JsonPropertyName("approve")]
         public Commits Approve { get; set; }
 
-        [JsonProperty("statuses")]
+        [JsonPropertyName("statuses")]
         public Commits Statuses { get; set; }
     }
 }

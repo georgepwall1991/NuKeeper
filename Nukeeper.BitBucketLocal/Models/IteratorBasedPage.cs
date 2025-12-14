@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.BitBucketLocal.Models
 {
@@ -9,21 +9,21 @@ namespace NuKeeper.BitBucketLocal.Models
     /// <typeparam name="T"></typeparam>
     public class IteratorBasedPage<T>
     {
-        [JsonProperty("size")]
+        [JsonPropertyName("size")]
         public ulong? Size { get; set; }
 
-        [JsonProperty("limit")]
+        [JsonPropertyName("limit")]
         public int Limit { get; set; }
-        [JsonProperty("isLastPage")]
+        [JsonPropertyName("isLastPage")]
         public bool IsLastPage { get; set; }
 
-        [JsonProperty("values")]
+        [JsonPropertyName("values")]
         public List<T> Values { get; set; }
 
-        [JsonProperty("start")]
+        [JsonPropertyName("start")]
         public int Start { get; set; }
 
-        [JsonProperty("nextPageStart")]
+        [JsonPropertyName("nextPageStart")]
         public int? NextPageStart { get; set; }
     }
 }

@@ -1,22 +1,22 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.Gitea.Model
 {
     public class PullRequestBranchInfo
     {
-        [JsonProperty("label")]
+        [JsonPropertyName("label")]
         public string Label { get; set; }
 
-        [JsonProperty("ref")]
+        [JsonPropertyName("ref")]
         public string Ref { get; set; }
 
-        [JsonProperty("repo")]
+        [JsonPropertyName("repo")]
         public Repository Repo { get; set; }
 
-        [JsonProperty("repo_id")]
+        [JsonPropertyName("repo_id")]
         public long RepoId { get; set; }
 
-        [JsonProperty("sha")]
+        [JsonPropertyName("sha")]
         public string Sha { get; set; }
     }
 }

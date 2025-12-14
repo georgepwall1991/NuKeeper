@@ -1,10 +1,10 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.BitBucketLocal.Models
 {
     public class PullRequestReviewer
     {
-        [JsonProperty("user")]
+        [JsonPropertyName("user")]
         public Reviewer User { get; set; }
     }
 }

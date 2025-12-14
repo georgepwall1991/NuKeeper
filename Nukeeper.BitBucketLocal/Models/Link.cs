@@ -1,13 +1,13 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.BitBucketLocal.Models
 {
     public class Link
     {
-        [JsonProperty("href")]
+        [JsonPropertyName("href")]
         public string Href { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
     }
 }

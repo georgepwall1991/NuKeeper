@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 using System;
 using System.Collections.Generic;
 
@@ -6,34 +6,34 @@ namespace NuKeeper.Gitea.Model
 {
     public class CreatePullRequestOption
     {
-        [JsonProperty("assignee")]
+        [JsonPropertyName("assignee")]
         public string Assignee { get; set; }
 
-        [JsonProperty("base")]
+        [JsonPropertyName("base")]
         public string Base { get; set; }
 
-        [JsonProperty("body")]
+        [JsonPropertyName("body")]
         public string Body { get; set; }
 
-        [JsonProperty("due_date")]
+        [JsonPropertyName("due_date")]
         public DateTime DueDate { get; set; }
 
         public string Head { get; set; }
 
-        [JsonProperty("milestone")]
+        [JsonPropertyName("milestone")]
         public long Milestone { get; set; }
 
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; }
 
-        [JsonProperty("assignees")]
+        [JsonPropertyName("assignees")]
         public IEnumerable<string> Assginees
         {
             get;
             set;
         }
 
-        [JsonProperty("labels")]
+        [JsonPropertyName("labels")]
         public IEnumerable<long> Labels { get; set; }
     }
 }

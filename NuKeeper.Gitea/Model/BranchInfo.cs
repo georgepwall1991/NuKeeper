@@ -1,13 +1,13 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.Gitea.Model
 {
     public class BranchInfo
     {
-        [JsonProperty("commit")]
+        [JsonPropertyName("commit")]
         public Commit Commit { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
     }
 }

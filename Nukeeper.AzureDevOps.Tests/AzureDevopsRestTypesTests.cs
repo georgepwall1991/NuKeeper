@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json;
 using NuKeeper.AzureDevOps;
 using NUnit.Framework;
 
@@ -8,6 +8,12 @@ namespace Nukeeper.AzureDevOps.Tests
     [Parallelizable(ParallelScope.All)]
     public class AzureDevopsRestTypesTests
     {
+        private static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
         [TestCase((long)0)]
         [TestCase((long)2147483647)] //int.MaxValue
         [TestCase((long)4294967295)] //uint.MaxValue
@@ -15,7 +21,7 @@ namespace Nukeeper.AzureDevOps.Tests
         public void AzureRepository_CanBeDeserializedWithSize(long size)
         {
             var json = AzureRepositoryJsonWithSize(size);
-            Assert.DoesNotThrow(() => JsonConvert.DeserializeObject<AzureRepository>(json));
+            Assert.DoesNotThrow(() => JsonSerializer.Deserialize<AzureRepository>(json, JsonOptions));
         }
 
         private static string AzureRepositoryJsonWithSize(long size)

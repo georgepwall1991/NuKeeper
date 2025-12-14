@@ -1,16 +1,16 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.Gitea.Model
 {
     public class Permissions
     {
-        [JsonProperty("admin")]
+        [JsonPropertyName("admin")]
         public bool IsAdmin { get; set; }
 
-        [JsonProperty("pull")]
+        [JsonPropertyName("pull")]
         public bool IsPull { get; set; }
 
-        [JsonProperty("push")]
+        [JsonPropertyName("push")]
         public bool IsPush { get; set; }
     }
 }

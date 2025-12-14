@@ -1,56 +1,56 @@
 using System;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.Gitlab.Model
 {
     public class ForkedFromProject
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public long Id { get; set; }
 
-        [JsonProperty("description")]
+        [JsonPropertyName("description")]
         public string Description { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("name_with_namespace")]
+        [JsonPropertyName("name_with_namespace")]
         public string NameWithNamespace { get; set; }
 
-        [JsonProperty("path")]
+        [JsonPropertyName("path")]
         public string Path { get; set; }
 
-        [JsonProperty("path_with_namespace")]
+        [JsonPropertyName("path_with_namespace")]
         public string PathWithNamespace { get; set; }
 
-        [JsonProperty("created_at")]
+        [JsonPropertyName("created_at")]
         public DateTimeOffset CreatedAt { get; set; }
 
-        [JsonProperty("default_branch")]
+        [JsonPropertyName("default_branch")]
         public string DefaultBranch { get; set; }
 
-        [JsonProperty("ssh_url_to_repo")]
+        [JsonPropertyName("ssh_url_to_repo")]
         public string SshUrlToRepo { get; set; }
 
-        [JsonProperty("http_url_to_repo")]
+        [JsonPropertyName("http_url_to_repo")]
         public Uri HttpUrlToRepo { get; set; }
 
-        [JsonProperty("web_url")]
+        [JsonPropertyName("web_url")]
         public Uri WebUrl { get; set; }
 
-        [JsonProperty("avatar_url")]
+        [JsonPropertyName("avatar_url")]
         public Uri AvatarUrl { get; set; }
 
-        [JsonProperty("license_url")]
+        [JsonPropertyName("license_url")]
         public Uri LicenseUrl { get; set; }
 
-        [JsonProperty("star_count")]
+        [JsonPropertyName("star_count")]
         public long StarCount { get; set; }
 
-        [JsonProperty("forks_count")]
+        [JsonPropertyName("forks_count")]
         public long ForksCount { get; set; }
 
-        [JsonProperty("last_activity_at")]
+        [JsonPropertyName("last_activity_at")]
         public DateTimeOffset LastActivityAt { get; set; }
     }
 }

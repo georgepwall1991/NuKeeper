@@ -1,31 +1,31 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.Gitlab.Model
 {
     public class Branch
     {
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("merged")]
+        [JsonPropertyName("merged")]
         public bool Merged { get; set; }
 
-        [JsonProperty("protected")]
+        [JsonPropertyName("protected")]
         public bool Protected { get; set; }
 
-        [JsonProperty("default")]
+        [JsonPropertyName("default")]
         public bool Default { get; set; }
 
-        [JsonProperty("developers_can_push")]
+        [JsonPropertyName("developers_can_push")]
         public bool DevelopersCanPush { get; set; }
 
-        [JsonProperty("developers_can_merge")]
+        [JsonPropertyName("developers_can_merge")]
         public bool DevelopersCanMerge { get; set; }
 
-        [JsonProperty("can_push")]
+        [JsonPropertyName("can_push")]
         public bool CanPush { get; set; }
 
-        [JsonProperty("commit")]
+        [JsonPropertyName("commit")]
         public Commit Commit { get; set; }
     }
 }

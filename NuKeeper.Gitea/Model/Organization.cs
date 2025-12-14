@@ -1,28 +1,28 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.Gitea.Model
 {
     public class Organization
     {
-        [JsonProperty("avatar_url")]
+        [JsonPropertyName("avatar_url")]
         public string AvatarUrl { get; set; }
 
-        [JsonProperty("description")]
+        [JsonPropertyName("description")]
         public string Description { get; set; }
 
-        [JsonProperty("full_name")]
+        [JsonPropertyName("full_name")]
         public string FullName { get; set; }
 
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public int Id { get; set; }
 
-        [JsonProperty("location")]
+        [JsonPropertyName("location")]
         public string Location { get; set; }
 
-        [JsonProperty("username")]
+        [JsonPropertyName("username")]
         public string UserName { get; set; }
 
-        [JsonProperty("website")]
+        [JsonPropertyName("website")]
         public string Website { get; set; }
     }
 }

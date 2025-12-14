@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.Gitea.Model
 {
@@ -9,7 +9,7 @@ namespace NuKeeper.Gitea.Model
             Organization = organizationName;
         }
 
-        [JsonProperty("organization")]
+        [JsonPropertyName("organization")]
         public string Organization { get; set; }
     }
 }

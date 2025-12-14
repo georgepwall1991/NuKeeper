@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.Logging;
 using System;
@@ -9,6 +8,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -16,6 +16,13 @@ namespace NuKeeper.AzureDevOps
 {
     public class AzureDevOpsRestClient
     {
+        private static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        };
+
         private readonly HttpClient _client;
         private readonly INuKeeperLogger _logger;
 
@@ -92,7 +99,7 @@ namespace NuKeeper.AzureDevOps
 
             try
             {
-                return JsonConvert.DeserializeObject<T>(responseBody);
+                return JsonSerializer.Deserialize<T>(responseBody, JsonOptions);
             }
             catch (JsonException ex)
             {
@@ -172,19 +179,19 @@ namespace NuKeeper.AzureDevOps
 
         public async Task<PullRequest> CreatePullRequest(PRRequest request, string projectName, string azureRepositoryId)
         {
-            var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
+            var content = new StringContent(JsonSerializer.Serialize(request, JsonOptions), Encoding.UTF8, "application/json");
             return await PostResource<PullRequest>($"{projectName}/_apis/git/repositories/{azureRepositoryId}/pullrequests", content).ConfigureAwait(false);
         }
 
         public async Task<LabelResource> CreatePullRequestLabel(LabelRequest request, string projectName, string azureRepositoryId, int pullRequestId)
         {
-            var labelContent = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
+            var labelContent = new StringContent(JsonSerializer.Serialize(request, JsonOptions), Encoding.UTF8, "application/json");
             return await PostResource<LabelResource>($"{projectName}/_apis/git/repositories/{azureRepositoryId}/pullRequests/{pullRequestId}/labels", labelContent, true).ConfigureAwait(false);
         }
 
         public async Task<PullRequest> SetAutoComplete(PRRequest request, string projectName, string azureRepositoryId, int pullRequestId)
         {
-            var autoCompleteContent = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
+            var autoCompleteContent = new StringContent(JsonSerializer.Serialize(request, JsonOptions), Encoding.UTF8, "application/json");
             return await PatchResource<PullRequest>($"{projectName}/_apis/git/repositories/{azureRepositoryId}/pullRequests/{pullRequestId}", autoCompleteContent).ConfigureAwait(false);
         }
         

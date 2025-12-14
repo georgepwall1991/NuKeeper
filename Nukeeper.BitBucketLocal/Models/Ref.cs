@@ -1,13 +1,13 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.BitBucketLocal.Models
 {
     public class Ref
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
-        [JsonProperty("repository")]
+        [JsonPropertyName("repository")]
         public Repository Repository { get; set; }
     }
 }

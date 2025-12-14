@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json;
 using NSubstitute;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.Logging;
@@ -36,7 +36,7 @@ namespace Nukeeper.AzureDevOps.Tests
             var fakeHttpMessageHandler = new FakeHttpMessageHandler(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(JsonConvert.SerializeObject("<body>Login Page</body>"), Encoding.UTF8, "application/json")
+                Content = new StringContent(JsonSerializer.Serialize("<body>Login Page</body>"), Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
             });
             var fakeHttpClient = new HttpClient(fakeHttpMessageHandler) { BaseAddress = new Uri("https://fakebaseAddress.com/") };
             var httpClientFactory = Substitute.For<IHttpClientFactory>();
@@ -429,13 +429,19 @@ namespace Nukeeper.AzureDevOps.Tests
             Assert.AreEqual(expectedUri, uri);
         }
 
+        private static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        };
+
         private static AzureDevOpsRestClient GetFakeClient(object returnObject)
         {
-            var a = JsonConvert.SerializeObject(returnObject);
             var fakeHttpMessageHandler = new FakeHttpMessageHandler(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(JsonConvert.SerializeObject(returnObject), Encoding.UTF8, "application/json")
+                Content = new StringContent(JsonSerializer.Serialize(returnObject, JsonOptions), Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
             });
 
             var fakeHttpClient = new HttpClient(fakeHttpMessageHandler) { BaseAddress = new Uri("https://fakebaseAddress.com/") };

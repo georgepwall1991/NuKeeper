@@ -1,22 +1,22 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.Gitlab.Model
 {
     public class Statistics
     {
-        [JsonProperty("commit_count")]
+        [JsonPropertyName("commit_count")]
         public long CommitCount { get; set; }
 
-        [JsonProperty("storage_size")]
+        [JsonPropertyName("storage_size")]
         public long StorageSize { get; set; }
 
-        [JsonProperty("repository_size")]
+        [JsonPropertyName("repository_size")]
         public long RepositorySize { get; set; }
 
-        [JsonProperty("lfs_objects_size")]
+        [JsonPropertyName("lfs_objects_size")]
         public long LfsObjectsSize { get; set; }
 
-        [JsonProperty("job_artifacts_size")]
+        [JsonPropertyName("job_artifacts_size")]
         public long JobArtifactsSize { get; set; }
     }
 }

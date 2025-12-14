@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.Logging;
 using NuKeeper.Gitea.Model;
@@ -10,6 +9,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -17,6 +17,13 @@ namespace NuKeeper.Gitea
 {
     public class GiteaRestClient
     {
+        private static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        };
+
         private readonly HttpClient _client;
         private readonly INuKeeperLogger _logger;
 
@@ -99,7 +106,7 @@ namespace NuKeeper.Gitea
         public Task<Repository> ForkRepository(string ownerName, string repositoryName, string organizationName)
         {
             var encodedProjectName = $"{ownerName}/{repositoryName}";
-            var content = new StringContent(JsonConvert.SerializeObject(new ForkInfo(organizationName)), Encoding.UTF8,
+            var content = new StringContent(JsonSerializer.Serialize(new ForkInfo(organizationName), JsonOptions), Encoding.UTF8,
                 "application/json");
 
             return PostResource<Repository>($"repos/{encodedProjectName}/forks", content);
@@ -147,7 +154,7 @@ namespace NuKeeper.Gitea
         {
             var encodedProjectName = $"{owner}/{repositoryName}";
 
-            var content = new StringContent(JsonConvert.SerializeObject(pullRequest), Encoding.UTF8,
+            var content = new StringContent(JsonSerializer.Serialize(pullRequest, JsonOptions), Encoding.UTF8,
                 "application/json");
             return await PostResource<PullRequest>($"repos/{encodedProjectName}/pulls", content).ConfigureAwait(false);
         }
@@ -210,7 +217,7 @@ namespace NuKeeper.Gitea
 
             try
             {
-                return JsonConvert.DeserializeObject<T>(responseBody);
+                return JsonSerializer.Deserialize<T>(responseBody, JsonOptions);
             }
             catch (JsonException ex)
             {

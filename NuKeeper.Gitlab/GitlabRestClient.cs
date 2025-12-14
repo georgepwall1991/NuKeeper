@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.Logging;
 using System;
@@ -8,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -15,6 +15,13 @@ namespace NuKeeper.Gitlab
 {
     public class GitlabRestClient
     {
+        private static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        };
+
         private readonly HttpClient _client;
         private readonly INuKeeperLogger _logger;
 
@@ -83,7 +90,7 @@ namespace NuKeeper.Gitlab
         {
             var encodedProjectName = HttpUtility.UrlEncode($"{projectName}/{repositoryName}");
 
-            var content = new StringContent(JsonConvert.SerializeObject(mergeRequest), Encoding.UTF8,
+            var content = new StringContent(JsonSerializer.Serialize(mergeRequest, JsonOptions), Encoding.UTF8,
                 "application/json");
             return PostResource<Model.MergeRequest>($"projects/{encodedProjectName}/merge_requests", content);
         }
@@ -145,7 +152,7 @@ namespace NuKeeper.Gitlab
 
             try
             {
-                return JsonConvert.DeserializeObject<T>(responseBody);
+                return JsonSerializer.Deserialize<T>(responseBody, JsonOptions);
             }
             catch (JsonException ex)
             {

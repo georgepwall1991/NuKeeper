@@ -1,25 +1,25 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.BitBucketLocal.Models
 {
     public class Branch
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
-        [JsonProperty("displayId")]
+        [JsonPropertyName("displayId")]
         public string DisplayId { get; set; }
 
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public string Type { get; set; }
 
-        [JsonProperty("latestCommit")]
+        [JsonPropertyName("latestCommit")]
         public string LatestCommit { get; set; }
 
-        [JsonProperty("latestChangeset")]
+        [JsonPropertyName("latestChangeset")]
         public string LatestChangeset { get; set; }
 
-        [JsonProperty("isDefault")]
+        [JsonPropertyName("isDefault")]
         public bool IsDefault { get; set; }
     }
 }

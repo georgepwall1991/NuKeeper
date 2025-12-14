@@ -1,35 +1,35 @@
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.BitBucketLocal.Models
 {
     public class PullRequest
     {
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; }
 
-        [JsonProperty("description")]
+        [JsonPropertyName("description")]
         public string Description { get; set; } = string.Empty;
 
-        [JsonProperty("state")]
+        [JsonPropertyName("state")]
         public string State { get; set; } = "OPEN";
 
-        [JsonProperty("open")]
+        [JsonPropertyName("open")]
         public bool Open { get; set; } = true;
 
-        [JsonProperty("closed")]
+        [JsonPropertyName("closed")]
         public bool Closed { get; set; } = false;
 
-        [JsonProperty("fromRef")]
+        [JsonPropertyName("fromRef")]
         public Ref FromRef { get; set; }
 
-        [JsonProperty("toRef")]
+        [JsonPropertyName("toRef")]
         public Ref ToRef { get; set; }
 
-        [JsonProperty("locked")]
+        [JsonPropertyName("locked")]
         public bool Locked { get; set; } = false;
 
-        [JsonProperty("reviewers")]
+        [JsonPropertyName("reviewers")]
         public List<PullRequestReviewer> Reviewers { get; set; }
     }
 }

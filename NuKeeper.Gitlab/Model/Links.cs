@@ -1,29 +1,29 @@
 using System;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.Gitlab.Model
 {
     public class Links
     {
-        [JsonProperty("self")]
+        [JsonPropertyName("self")]
         public Uri Self { get; set; }
 
-        [JsonProperty("issues")]
+        [JsonPropertyName("issues")]
         public Uri Issues { get; set; }
 
-        [JsonProperty("merge_requests")]
+        [JsonPropertyName("merge_requests")]
         public Uri MergeRequests { get; set; }
 
-        [JsonProperty("repo_branches")]
+        [JsonPropertyName("repo_branches")]
         public Uri RepoBranches { get; set; }
 
-        [JsonProperty("labels")]
+        [JsonPropertyName("labels")]
         public Uri Labels { get; set; }
 
-        [JsonProperty("events")]
+        [JsonPropertyName("events")]
         public Uri Events { get; set; }
 
-        [JsonProperty("members")]
+        [JsonPropertyName("members")]
         public Uri Members { get; set; }
     }
 }

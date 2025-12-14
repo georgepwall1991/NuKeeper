@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 using System;
 using System.Collections.Generic;
 
@@ -6,79 +6,79 @@ namespace NuKeeper.Gitea.Model
 {
     public class PullRequest
     {
-        [JsonProperty("assignee")]
+        [JsonPropertyName("assignee")]
         public User Assignee { get; set; }
 
-        [JsonProperty("assignees")]
+        [JsonPropertyName("assignees")]
         public IEnumerable<User> Assignees { get; set; }
 
-        [JsonProperty("base")]
+        [JsonPropertyName("base")]
         public PullRequestBranchInfo Base { get; set; }
 
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; }
 
-        [JsonProperty("body")]
+        [JsonPropertyName("body")]
         public string Body { get; set; }
 
-        [JsonProperty("closed_at")]
+        [JsonPropertyName("closed_at")]
         public DateTime? CloseDate { get; set; }
 
-        [JsonProperty("created_at")]
+        [JsonPropertyName("created_at")]
         public DateTime? CreateDate { get; set; }
 
-        [JsonProperty("due_date")]
+        [JsonPropertyName("due_date")]
         public DateTime? DueDate { get; set; }
 
-        [JsonProperty("comments")]
+        [JsonPropertyName("comments")]
         public long Comments { get; set; }
 
-        [JsonProperty("diff_url")]
+        [JsonPropertyName("diff_url")]
         public string DiffUrl { get; set; }
 
-        [JsonProperty("head")]
+        [JsonPropertyName("head")]
         public PullRequestBranchInfo Head { get; set; }
 
-        [JsonProperty("html_url")]
+        [JsonPropertyName("html_url")]
         public string HtmlUrl { get; set; }
 
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public long Id { get; set; }
 
-        [JsonProperty("labels")]
+        [JsonPropertyName("labels")]
         public IEnumerable<Label> Labels { get; set; }
 
-        [JsonProperty("merge_base")]
+        [JsonPropertyName("merge_base")]
         public string MergeBase { get; set; }
 
-        [JsonProperty("merge_commit_sha")]
+        [JsonPropertyName("merge_commit_sha")]
         public string MergeCommitSha { get; set; }
 
-        [JsonProperty("mergeable")]
+        [JsonPropertyName("mergeable")]
         public bool IsMergeable { get; set; }
 
-        [JsonProperty("merged")]
+        [JsonPropertyName("merged")]
         public bool IsMerged { get; set; }
 
-        [JsonProperty("merged_at")]
+        [JsonPropertyName("merged_at")]
         public DateTime? MergedAt { get; set; }
 
-        [JsonProperty("merged_by")]
+        [JsonPropertyName("merged_by")]
         public User MergedBy { get; set; }
 
-        [JsonProperty("number")]
+        [JsonPropertyName("number")]
         public long Number { get; set; }
 
-        [JsonProperty("patch_url")]
+        [JsonPropertyName("patch_url")]
         public string PatchUrl { get; set; }
 
-        [JsonProperty("updated_at")]
+        [JsonPropertyName("updated_at")]
         public DateTime? UpdatedAt { get; set; }
 
-        [JsonProperty("url")]
+        [JsonPropertyName("url")]
         public string Url { get; set; }
 
-        [JsonProperty("user")]
+        [JsonPropertyName("user")]
         public User User { get; set; }
     }
 }

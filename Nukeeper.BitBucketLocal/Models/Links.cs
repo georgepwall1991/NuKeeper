@@ -1,14 +1,14 @@
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.BitBucketLocal.Models
 {
     public class Links
     {
-        [JsonProperty("self")]
+        [JsonPropertyName("self")]
         public List<Link> Self { get; set; }
 
-        [JsonProperty("clone")]
+        [JsonPropertyName("clone")]
         public List<Link> Clone { get; set; }
     }
 }

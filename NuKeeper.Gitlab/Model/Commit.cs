@@ -1,38 +1,38 @@
 using System;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.Gitlab.Model
 {
     public class Commit
     {
-        [JsonProperty("author_email")]
+        [JsonPropertyName("author_email")]
         public string AuthorEmail { get; set; }
 
-        [JsonProperty("author_name")]
+        [JsonPropertyName("author_name")]
         public string AuthorName { get; set; }
 
-        [JsonProperty("authored_date")]
+        [JsonPropertyName("authored_date")]
         public DateTimeOffset AuthoredDate { get; set; }
 
-        [JsonProperty("committed_date")]
+        [JsonPropertyName("committed_date")]
         public DateTimeOffset CommittedDate { get; set; }
 
-        [JsonProperty("committer_email")]
+        [JsonPropertyName("committer_email")]
         public string CommitterEmail { get; set; }
 
-        [JsonProperty("committer_name")]
+        [JsonPropertyName("committer_name")]
         public string CommitterName { get; set; }
 
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
-        [JsonProperty("short_id")]
+        [JsonPropertyName("short_id")]
         public string ShortId { get; set; }
 
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; }
 
-        [JsonProperty("message")]
+        [JsonPropertyName("message")]
         public string Message { get; set; }
     }
 }

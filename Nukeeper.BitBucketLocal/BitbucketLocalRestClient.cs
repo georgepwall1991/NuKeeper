@@ -6,8 +6,8 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using NuKeeper.Abstractions;
 using NuKeeper.Abstractions.Logging;
 using NuKeeper.BitBucketLocal.Models;
@@ -16,9 +16,11 @@ namespace NuKeeper.BitBucketLocal
 {
     internal class BitbucketLocalRestClient
     {
-        private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings
+        private static readonly JsonSerializerOptions JsonOptions = new()
         {
-            NullValueHandling = NullValueHandling.Ignore
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
         };
 
         private readonly HttpClient _client;
@@ -78,7 +80,7 @@ namespace NuKeeper.BitBucketLocal
 
             try
             {
-                return JsonConvert.DeserializeObject<T>(responseBody);
+                return JsonSerializer.Deserialize<T>(responseBody, JsonOptions);
             }
             catch (JsonException)
             {
@@ -130,7 +132,7 @@ namespace NuKeeper.BitBucketLocal
 
         public async Task<PullRequest> CreatePullRequest(PullRequest pullReq, string projectName, string repositoryName, [CallerMemberName] string caller = null)
         {
-            var requestJson = JsonConvert.SerializeObject(pullReq, Formatting.None, JsonSerializerSettings);
+            var requestJson = JsonSerializer.Serialize(pullReq, JsonOptions);
             var requestBody = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
             var response = await _client.PostAsync($@"{ApiPath}/projects/{projectName}/repos/{repositoryName}/pull-requests", requestBody).ConfigureAwait(false);

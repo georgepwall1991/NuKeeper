@@ -7,7 +7,6 @@
     <Description>Automagically update nuget packages in .NET projects</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="NuGet.Credentials" Version="7.0.1" />
     <PackageReference Include="SimpleInjector" Version="5.5.0" />
     <PackageReference Include="SimpleInjector.Integration.ServiceCollection" Version="5.5.0" />

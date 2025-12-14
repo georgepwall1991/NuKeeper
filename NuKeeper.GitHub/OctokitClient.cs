@@ -8,6 +8,7 @@ using Octokit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Organization = NuKeeper.Abstractions.CollaborationModels.Organization;
 using PullRequestRequest = NuKeeper.Abstractions.CollaborationModels.PullRequestRequest;
@@ -15,7 +16,6 @@ using Repository = NuKeeper.Abstractions.CollaborationModels.Repository;
 using SearchCodeRequest = NuKeeper.Abstractions.CollaborationModels.SearchCodeRequest;
 using SearchCodeResult = NuKeeper.Abstractions.CollaborationModels.SearchCodeResult;
 using User = NuKeeper.Abstractions.CollaborationModels.User;
-using Newtonsoft.Json;
 
 namespace NuKeeper.GitHub
 {
@@ -261,10 +261,22 @@ namespace NuKeeper.GitHub
             {
                 if (ex.HttpResponse?.Body != null)
                 {
-                    dynamic response = JsonConvert.DeserializeObject(ex.HttpResponse.Body.ToString());
-                    if (response?.errors != null && response.errors.Count > 0)
+                    try
                     {
-                        throw new NuKeeperException(response.errors.First.message.ToString(), ex);
+                        using var document = JsonDocument.Parse(ex.HttpResponse.Body.ToString());
+                        if (document.RootElement.TryGetProperty("errors", out var errors) &&
+                            errors.GetArrayLength() > 0)
+                        {
+                            var firstError = errors[0];
+                            if (firstError.TryGetProperty("message", out var message))
+                            {
+                                throw new NuKeeperException(message.GetString(), ex);
+                            }
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        // Ignore JSON parsing errors and fall through to default exception
                     }
                 }
 

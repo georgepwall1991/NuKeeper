@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 using System;
 
 namespace NuKeeper.Gitea.Model
@@ -6,25 +6,25 @@ namespace NuKeeper.Gitea.Model
     public class Commit
     {
 
-        [JsonProperty("author")]
+        [JsonPropertyName("author")]
         public Actor Author { get; set; }
 
-        [JsonProperty("comitter")]
+        [JsonPropertyName("comitter")]
         public Actor Comitter { get; set; }
 
-        [JsonProperty("timestamp")]
+        [JsonPropertyName("timestamp")]
         public DateTime AuthoredDate { get; set; }
 
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
-        [JsonProperty("short_id")]
+        [JsonPropertyName("short_id")]
         public string ShortId { get; set; }
 
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; }
 
-        [JsonProperty("url")]
+        [JsonPropertyName("url")]
         public string Url { get; set; }
     }
 }

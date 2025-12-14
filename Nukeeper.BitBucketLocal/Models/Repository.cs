@@ -1,33 +1,33 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace NuKeeper.BitBucketLocal.Models
 {
     public class Repository
     {
-        [JsonProperty("slug")]
+        [JsonPropertyName("slug")]
         public string Slug { get; set; }
 
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public int Id { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("scmId")]
+        [JsonPropertyName("scmId")]
         public string ScmId { get; set; }
 
-        [JsonProperty("state")]
+        [JsonPropertyName("state")]
         public string State { get; set; }
 
         public bool? Forkable { get; set; }
 
-        [JsonProperty("project")]
+        [JsonPropertyName("project")]
         public Project Project { get; set; }
 
-        [JsonProperty("public")]
+        [JsonPropertyName("public")]
         public bool? Public { get; set; }
 
-        [JsonProperty("links")]
+        [JsonPropertyName("links")]
         public Links Links { get; set; }
     }
 }
